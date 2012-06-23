@@ -114,17 +114,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		}
 	}
 	
-	private class ArticleNavigationEntry extends NavigationEntry {
-		public ArticleNavigationEntry(Article article) {
-			super(article.title);
-		}		
-
-		@Override	
-		public void onItemSelected() {
-
-		}
-	}
-	
 	private class RootNavigationEntry extends NavigationEntry {
 		public RootNavigationEntry(String title) {
 			super(title);
@@ -231,13 +220,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 		@Override	
 		public void onItemSelected() {
-
-			m_selectedArticle = null;
-			
-			if (!m_smallScreenMode)
-				findViewById(R.id.article_fragment).setVisibility(View.GONE);							
-
-			viewFeed(m_feed, false);
+			// no-op
 		}
 	}
 
@@ -422,6 +405,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	}
 
 	@SuppressWarnings("unchecked")
+	@Override
 	public void catchupFeed(final Feed feed) {
 		Log.d(TAG, "catchupFeed=" + feed);
 
@@ -1554,6 +1538,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		initMainMenu();
 	}
 
+	@Override
 	public void viewCategory(FeedCategory cat, boolean openAsFeed) {
 
 		Log.d(TAG, "viewCategory");
@@ -1702,10 +1687,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 		HeadlinesFragment hf = (HeadlinesFragment) getSupportFragmentManager()
 				.findFragmentByTag(FRAG_HEADLINES);
-		FeedsFragment ff = (FeedsFragment) getSupportFragmentManager()
-				.findFragmentByTag(FRAG_FEEDS);
-		FeedCategoriesFragment cf = (FeedCategoriesFragment) getSupportFragmentManager()
-				.findFragmentByTag(FRAG_CATS);
 
 		switch (item.getItemId()) {
 		case R.id.share_article:
@@ -1761,124 +1742,9 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				}
 			}
 			return true;
-		case R.id.browse_articles:
-			if (cf != null) {
-				FeedCategory cat = cf.getCategoryAtPosition(info.position);
-				if (cat != null) {
-					viewCategory(cat, true);
-					cf.setSelectedCategory(cat);
-				}
-			}
-			return true;
-		case R.id.browse_feeds:
-			if (cf != null) {
-				FeedCategory cat = cf.getCategoryAtPosition(info.position);
-				if (cat != null) {
-					viewCategory(cat, false);
-					cf.setSelectedCategory(cat);
-				}
-			}
-			return true;
-		case R.id.catchup_category:
-			if (cf != null) {
-				FeedCategory cat = cf.getCategoryAtPosition(info.position);
-				if (cat != null) {
-					catchupFeed(new Feed(cat.id, cat.title, true));
-				}
-			}
-			return true;
-		case R.id.catchup_feed:
-			if (ff != null) {
-				Feed feed = ff.getFeedAtPosition(info.position);
-				if (feed != null) {
-					catchupFeed(feed);
-				}
-			}
-			return true;
-		case R.id.selection_toggle_marked:
-			if (hf != null) {
-				ArticleList selected = hf.getSelectedArticles();
 
-				if (selected.size() > 0) {
-					for (Article a : selected)
-						a.marked = !a.marked;
-
-					toggleArticlesMarked(selected);
-					hf.notifyUpdated();
-				} else {
-					Article article = hf.getArticleAtPosition(info.position);
-					if (article != null) {
-						article.marked = !article.marked;
-						saveArticleMarked(article);
-						hf.notifyUpdated();
-					}
-				}
-			}
-			return true;
-		case R.id.selection_toggle_published:
-			if (hf != null) {
-				ArticleList selected = hf.getSelectedArticles();
-
-				if (selected.size() > 0) {
-					for (Article a : selected)
-						a.published = !a.published;
-
-					toggleArticlesPublished(selected);
-					hf.notifyUpdated();
-				} else {
-					Article article = hf.getArticleAtPosition(info.position);
-					if (article != null) {
-						article.published = !article.published;
-						saveArticlePublished(article);
-						hf.notifyUpdated();
-					}
-				}
-			}
-			return true;
-		case R.id.selection_toggle_unread:
-			if (hf != null) {
-				ArticleList selected = hf.getSelectedArticles();
-
-				if (selected.size() > 0) {
-					for (Article a : selected)
-						a.unread = !a.unread;
-
-					toggleArticlesUnread(selected);
-					hf.notifyUpdated();
-				} else {
-					Article article = hf.getArticleAtPosition(info.position);
-					if (article != null) {
-						article.unread = !article.unread;
-						saveArticleUnread(article);
-						hf.notifyUpdated();
-					}
-				}
-			}
-			return true;
-		case R.id.catchup_above:
-			if (hf != null) {
-				Article article = hf.getArticleAtPosition(info.position);
-				if (article != null) {
-					ArticleList articles = hf.getAllArticles();
-					ArticleList tmp = new ArticleList();
-					for (Article a : articles) {
-						a.unread = false;
-						tmp.add(a);
-						if (article.id == a.id)
-							break;
-					}
-					if (tmp.size() > 0) {
-						toggleArticlesUnread(tmp);
-						hf.notifyUpdated();
-					}
-				}
-			}
-			return true;
-			/*
-			 * case R.id.set_unread: if (hf != null) { Article article =
-			 * hf.getArticleAtPosition(info.position); if (article != null) {
-			 * article.unread = true; saveArticleUnread(article); } } break;
-			 */
+		
+		
 		default:
 			Log.d(TAG,
 					"onContextItemSelected, unhandled id=" + item.getItemId());

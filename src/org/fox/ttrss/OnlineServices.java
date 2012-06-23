@@ -22,6 +22,9 @@ public interface OnlineServices {
 	public void onCatSelected(FeedCategory cat);
 	public void onFeedSelected(Feed feed);
 	
+	public void viewCategory(FeedCategory cat, boolean openAsFeed);
+	public void catchupFeed(final Feed feed);
+	
 	public void initMainMenu();
 	//public void login();
 	public void restart();

@@ -125,6 +125,27 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 	}
 	
 	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item
+				.getMenuInfo();
+		
+		switch (item.getItemId()) {
+		case R.id.catchup_feed:
+			if (true) {
+				Feed feed = getFeedAtPosition(info.position);
+				if (feed != null) {
+					m_onlineServices.catchupFeed(feed);
+				}
+			}
+			return true;		
+		default:
+			Log.d(TAG,
+					"onContextItemSelected, unhandled id=" + item.getItemId());
+			return super.onContextItemSelected(item);
+		}		
+	}
+	
+	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		inflater.inflate(R.menu.feeds_menu, menu);
 

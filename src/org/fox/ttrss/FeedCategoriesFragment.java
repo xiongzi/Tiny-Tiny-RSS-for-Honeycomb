@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
+import org.fox.ttrss.types.Feed;
 import org.fox.ttrss.types.FeedCategory;
 import org.fox.ttrss.types.FeedCategoryList;
 
@@ -96,6 +97,47 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 			item.setTitle(R.string.menu_all_feeds);
 		} else {
 			item.setTitle(R.string.menu_unread_feeds);
+		}
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item
+				.getMenuInfo();
+		
+		Log.d(TAG, "onContextItemSelected");
+	
+		switch (item.getItemId()) {
+		case R.id.browse_articles:
+			if (true) {
+				FeedCategory cat = getCategoryAtPosition(info.position);
+				if (cat != null) {
+					m_onlineServices.viewCategory(cat, true);
+					setSelectedCategory(cat);
+				}
+			}
+			return true;
+		case R.id.browse_feeds:
+			if (true) {
+				FeedCategory cat = getCategoryAtPosition(info.position);
+				if (cat != null) {
+					m_onlineServices.viewCategory(cat, false);
+					setSelectedCategory(cat);
+				}
+			}
+			return true;
+		case R.id.catchup_category:
+			if (true) {
+				FeedCategory cat = getCategoryAtPosition(info.position);
+				if (cat != null) {
+					m_onlineServices.catchupFeed(new Feed(cat.id, cat.title, true));
+				}
+			}
+		return true;		
+		default:
+			Log.d(TAG,
+					"onContextItemSelected, unhandled id=" + item.getItemId());
+			return super.onContextItemSelected(item);
 		}
 	}
 	

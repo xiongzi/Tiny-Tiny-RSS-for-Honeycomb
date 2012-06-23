@@ -167,6 +167,103 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	}
 	
 	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item
+				.getMenuInfo();
+		
+		switch (item.getItemId()) {
+		case R.id.selection_toggle_marked:
+			if (true) {
+				ArticleList selected = getSelectedArticles();
+
+				if (selected.size() > 0) {
+					for (Article a : selected)
+						a.marked = !a.marked;
+
+					m_onlineServices.toggleArticlesMarked(selected);
+					notifyUpdated();
+				} else {
+					Article article = getArticleAtPosition(info.position);
+					if (article != null) {
+						article.marked = !article.marked;
+						m_onlineServices.saveArticleMarked(article);
+						notifyUpdated();
+					}
+				}
+			}
+			return true;
+		case R.id.selection_toggle_published:
+			if (true) {
+				ArticleList selected = getSelectedArticles();
+
+				if (selected.size() > 0) {
+					for (Article a : selected)
+						a.published = !a.published;
+
+					m_onlineServices.toggleArticlesPublished(selected);
+					notifyUpdated();
+				} else {
+					Article article = getArticleAtPosition(info.position);
+					if (article != null) {
+						article.published = !article.published;
+						m_onlineServices.saveArticlePublished(article);
+						notifyUpdated();
+					}
+				}
+			}
+			return true;
+		case R.id.selection_toggle_unread:
+			if (true) {
+				ArticleList selected = getSelectedArticles();
+
+				if (selected.size() > 0) {
+					for (Article a : selected)
+						a.unread = !a.unread;
+
+					m_onlineServices.toggleArticlesUnread(selected);
+					notifyUpdated();
+				} else {
+					Article article = getArticleAtPosition(info.position);
+					if (article != null) {
+						article.unread = !article.unread;
+						m_onlineServices.saveArticleUnread(article);
+						notifyUpdated();
+					}
+				}
+			}
+			return true;
+		case R.id.catchup_above:
+			if (true) {
+				Article article = getArticleAtPosition(info.position);
+				if (article != null) {
+					ArticleList articles = getAllArticles();
+					ArticleList tmp = new ArticleList();
+					for (Article a : articles) {
+						a.unread = false;
+						tmp.add(a);
+						if (article.id == a.id)
+							break;
+					}
+					if (tmp.size() > 0) {
+						m_onlineServices.toggleArticlesUnread(tmp);
+						notifyUpdated();
+					}
+				}
+			}
+			return true;
+			/*
+			 * case R.id.set_unread: if (hf != null) { Article article =
+			 * hf.getArticleAtPosition(info.position); if (article != null) {
+			 * article.unread = true; saveArticleUnread(article); } } break;
+			 */
+		default:
+			Log.d(TAG,
+					"onContextItemSelected, unhandled id=" + item.getItemId());
+			return super.onContextItemSelected(item);
+		}		
+	}
+	
+	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {    	
 		
 		if (savedInstanceState != null) {
