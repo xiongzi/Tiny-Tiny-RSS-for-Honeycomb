@@ -49,16 +49,19 @@ public class ArticleFragment extends Fragment {
 	private SharedPreferences m_prefs;
 	private Article m_article;
 	private OnlineServices m_onlineServices;
+	private boolean m_showMenu;
 	//private Article m_nextArticle;
 	//private Article m_prevArticle;
 
 	public ArticleFragment() {
 		super();
+		m_showMenu = false;
 	}
 	
-	public ArticleFragment(Article article) {
+	public ArticleFragment(Article article, boolean showMenu) {
 		super();
 		
+		m_showMenu = showMenu;		
 		m_article = article;
 	}
 	
@@ -81,6 +84,7 @@ public class ArticleFragment extends Fragment {
 
 		if (savedInstanceState != null) {
 			m_article = savedInstanceState.getParcelable("article");
+			m_showMenu = savedInstanceState.getBoolean("showMenu");
 		}
 		
 		View view = inflater.inflate(R.layout.article_fragment, container, false);
@@ -101,8 +105,7 @@ public class ArticleFragment extends Fragment {
 				title.setMovementMethod(LinkMovementMethod.getInstance());
 				title.setText(Html.fromHtml("<a href=\""+m_article.link.trim().replace("\"", "\\\"")+"\">" + titleStr + "</a>"));
 				registerForContextMenu(title);
-				setHasOptionsMenu(true);
-				setMenuVisibility(false);
+				setHasOptionsMenu(m_showMenu);
 			}
 			
 			WebView web = (WebView)view.findViewById(R.id.content);
@@ -294,6 +297,7 @@ public class ArticleFragment extends Fragment {
 		super.onSaveInstanceState(out);
 
 		out.putParcelable("article", m_article);
+		out.putBoolean("showMenu", m_showMenu);
 	}
 
 	
@@ -325,9 +329,6 @@ public class ArticleFragment extends Fragment {
 		Log.d(TAG, "onOptionsMenuItemSelected");
 		
 		switch (item.getItemId()) {
-		case R.id.share_article:
-			m_onlineServices.shareArticle(m_article);
-			return true;
 		default:
 			Log.d(TAG,
 					"onOptionsItemSelected, unhandled id=" + item.getItemId());

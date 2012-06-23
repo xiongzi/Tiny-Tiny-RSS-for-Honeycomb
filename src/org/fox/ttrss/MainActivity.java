@@ -1271,54 +1271,12 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	@Override
 	public void initMainMenu() {
 		if (m_menu != null) {
-
-			//m_menu.setGroupVisible(R.id.menu_group_feeds, false);
-			//m_menu.setGroupVisible(R.id.menu_group_headlines, false);
-			//m_menu.setGroupVisible(R.id.menu_group_headlines_selection, false);
-			//m_menu.setGroupVisible(R.id.menu_group_article, false);
-
 			if (m_sessionId != null) {
 
-				m_menu.setGroupVisible(R.id.menu_group_logged_in, true);
 				m_menu.setGroupVisible(R.id.menu_group_logged_out, false);
-				
-				HeadlinesFragment hf = (HeadlinesFragment) getSupportFragmentManager()
-						.findFragmentByTag(FRAG_HEADLINES);
-
-				int numSelected = 0;
-
-				if (hf != null)
-					numSelected = hf.getSelectedArticles().size();
-
-				if (numSelected != 0) {
-					if (m_compatMode) {
-						//m_menu.setGroupVisible(R.id.menu_group_headlines_selection, true);
-					} else {
-						//if (m_headlinesActionMode == null)
-						//	m_headlinesActionMode = startActionMode(m_headlinesActionModeCallback);
-					}
-					
-				} else if (m_selectedArticle != null) {
-					//m_menu.setGroupVisible(R.id.menu_group_article, true);
-				} else if (m_activeFeed != null) {
-					//m_menu.setGroupVisible(R.id.menu_group_headlines, true);
-					
-					
-					
-				} else {
-					//m_menu.setGroupVisible(R.id.menu_group_feeds, true);
-				}
 
 				if (!m_compatMode) {
 					
-/*					if (m_activeFeed != null) {
-						getActionBar().setTitle(m_activeFeed.title);
-					} else if (m_activeCategory != null) {
-						getActionBar().setTitle(m_activeCategory.title);
-					} else {
-						getActionBar().setTitle(R.string.app_name);
-					} */
-
 					m_navigationAdapter.clear();
 
 					if (m_activeCategory != null || (m_activeFeed != null && m_smallScreenMode)) {
@@ -1344,30 +1302,12 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 						getActionBar().setTitle(R.string.app_name);
 					}
 
-					//if (m_smallScreenMode) {
-						getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticle != null || m_activeCategory != null || m_activeFeed != null);
-					//} else {
-					//	getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticle != null || m_activeCategory != null || m_activeFeed != null);
-					//}
-					
-					/* if (android.os.Build.VERSION.SDK_INT >= 14) {			
-						ShareActionProvider shareProvider = (ShareActionProvider) m_menu.findItem(R.id.share_article).getActionProvider();
-						
-						if (m_selectedArticle != null) {
-							Log.d(TAG, "setting up share provider");
-							shareProvider.setShareIntent(getShareIntent(m_selectedArticle));
-						}
-					} */
-					
+					getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticle != null || m_activeCategory != null || m_activeFeed != null);
 				}
 				
-				//m_menu.findItem(R.id.set_labels).setEnabled(m_apiLevel >= 1);
-				//m_menu.findItem(R.id.article_set_note).setEnabled(m_apiLevel >= 1);
-
 				m_menu.findItem(R.id.donate).setVisible(BillingHelper.isBillingSupported());
 								
 			} else {
-				m_menu.setGroupVisible(R.id.menu_group_logged_in, false);
 				m_menu.setGroupVisible(R.id.menu_group_logged_out, true);
 			}
 		}
@@ -1672,7 +1612,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		if (m_smallScreenMode || m_prefs.getBoolean("tablet_article_swipe", false)) {
 			frag = new ArticlePager(article);
 		} else {
-			frag = new ArticleFragment(article);
+			frag = new ArticleFragment(article, true);
 		}
 
 		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
@@ -1768,6 +1708,9 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				.findFragmentByTag(FRAG_CATS);
 
 		switch (item.getItemId()) {
+		case R.id.share_article:
+			shareArticle(m_selectedArticle);
+			return true;
 		case R.id.article_link_copy:
 			if (true) {
 				Article article = null;
@@ -2050,6 +1993,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	public void setSelectedArticle(Article article) {
 		m_selectedArticle = article;
 		updateHeadlines();
+		invalidateOptionsMenu();
 		initMainMenu();
 	}
 

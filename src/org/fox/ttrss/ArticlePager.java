@@ -9,8 +9,11 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ShareActionProvider;
 
 public class ArticlePager extends Fragment {
 
@@ -19,6 +22,7 @@ public class ArticlePager extends Fragment {
 	private OnlineServices m_onlineServices;
 	private HeadlinesFragment m_hf; 
 	private Article m_article;
+	private Menu m_menu;
 	
 	private class PagerAdapter extends FragmentStatePagerAdapter {
 		
@@ -31,7 +35,7 @@ public class ArticlePager extends Fragment {
 			Article article = m_hf.getArticleAtPosition(position);
 			
 			if (article != null) {
-				ArticleFragment af = new ArticleFragment(article);
+				ArticleFragment af = new ArticleFragment(article, false);
 				return af;
 			}
 			return null;
@@ -55,11 +59,34 @@ public class ArticlePager extends Fragment {
 	}
 	
 	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		inflater.inflate(R.menu.article_menu, menu);
+		
+		m_menu = menu;
+
+		updateMenu();
+	}
+	
+	private void updateMenu() {
+		if (m_menu != null) {
+			if (android.os.Build.VERSION.SDK_INT >= 14) {			
+				ShareActionProvider shareProvider = (ShareActionProvider) m_menu.findItem(R.id.share_article).getActionProvider();		
+				shareProvider.setShareIntent(MainActivity.getShareIntent(m_article));
+			}
+		
+			m_menu.findItem(R.id.set_labels).setEnabled(m_onlineServices.getApiLevel() >= 1);
+			m_menu.findItem(R.id.article_set_note).setEnabled(m_onlineServices.getApiLevel() >= 1);
+		}
+	}
+	
+	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {    	
 		View view = inflater.inflate(R.layout.article_pager, container, false);
 	
 		m_adapter = new PagerAdapter(getActivity().getSupportFragmentManager());
 		
+		setHasOptionsMenu(true);
+
 		ViewPager pager = (ViewPager) view.findViewById(R.id.article_pager);
 		
 		int position = m_hf.getArticlePosition(m_article);
@@ -75,8 +102,6 @@ public class ArticlePager extends Fragment {
 
 			@Override
 			public void onPageScrolled(int position, float arg1, int arg2) {
-				Fragment frag = m_adapter.getItem(position);
-				frag.setMenuVisibility(false);
 			}
 
 			@Override
@@ -89,16 +114,16 @@ public class ArticlePager extends Fragment {
 						m_onlineServices.saveArticleUnread(article);
 					}
 					m_onlineServices.setSelectedArticle(article);
-
-					Fragment frag = m_adapter.getItem(position);
-					frag.setMenuVisibility(true);
-
+					m_article = article;
+					
 					//Log.d(TAG, "Page #" + position + "/" + m_adapter.getCount());
 					
 					if (position == m_adapter.getCount() - 5) {
 						m_hf.refresh(true);
 						m_adapter.notifyDataSetChanged();
 					}
+					
+					updateMenu();
 				}
 			}
 		});

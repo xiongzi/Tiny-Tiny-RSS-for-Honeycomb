@@ -1,9 +1,5 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <group android:id="@+id/menu_group_logged_in" >
-
-    </group>
-
     <item
         android:id="@+id/preferences"
         android:icon="@android:drawable/ic_menu_preferences"
