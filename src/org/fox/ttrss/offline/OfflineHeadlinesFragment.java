@@ -95,7 +95,7 @@ public class OfflineHeadlinesFragment extends Fragment implements OnItemClickLis
 	public void onCreateContextMenu(ContextMenu menu, View v,
 	    ContextMenuInfo menuInfo) {
 		
-		getActivity().getMenuInflater().inflate(R.menu.headlines_menu, menu);
+		getActivity().getMenuInflater().inflate(R.menu.headlines_context_menu, menu);
 		
 		if (getSelectedArticleCount() > 0) {
 			menu.setHeaderTitle(R.string.headline_context_multiple);

@@ -18,7 +18,10 @@ import org.fox.ttrss.types.Feed;
 import org.jsoup.Jsoup;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.BitmapDrawable;
@@ -33,7 +36,11 @@ import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -45,8 +52,10 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -64,6 +73,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	private final String TAG = this.getClass().getSimpleName();
 	
 	private Feed m_feed;
+	private Menu m_menu;
 	private Article m_activeArticle;
 	private boolean m_refreshInProgress = false;
 	private boolean m_canLoadMore = false;
@@ -77,6 +87,40 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	private ArticleList m_selectedArticles = new ArticleList();
 	
 	private OnlineServices m_onlineServices;
+	
+	private ActionMode m_headlinesActionMode;
+	private HeadlinesActionModeCallback m_headlinesActionModeCallback;
+	
+	private class HeadlinesActionModeCallback implements ActionMode.Callback {
+		
+		@Override
+		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+			return false;
+		}
+		
+		@Override
+		public void onDestroyActionMode(ActionMode mode) {
+			m_selectedArticles.clear();
+			notifyUpdated();
+			m_headlinesActionMode = null;
+		}
+		
+		@Override
+		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+			
+			 MenuInflater inflater = getActivity().getMenuInflater();
+	            inflater.inflate(R.menu.headlines_action_context_menu, menu);
+			
+			return true;
+		}
+		
+		@Override
+		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+			onOptionsItemSelected(item);
+			return false;
+		}
+	};
+	
 	
 	private ImageGetter m_dummyGetter = new ImageGetter() {
 
@@ -103,7 +147,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	public void onCreateContextMenu(ContextMenu menu, View v,
 	    ContextMenuInfo menuInfo) {
 		
-		getActivity().getMenuInflater().inflate(R.menu.headlines_menu, menu);
+		getActivity().getMenuInflater().inflate(R.menu.headlines_context_menu, menu);
 		
 		if (m_selectedArticles.size() > 0) {
 			menu.setHeaderTitle(R.string.headline_context_multiple);
@@ -144,7 +188,12 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		list.setOnScrollListener(this);
 		//list.setEmptyView(view.findViewById(R.id.no_headlines));
 		registerForContextMenu(list);
+		setHasOptionsMenu(true);
 
+		if (!m_onlineServices.isCompatMode()) {
+			m_headlinesActionModeCallback = new HeadlinesActionModeCallback();
+		}
+		
 		if (m_onlineServices.isSmallScreen() || m_onlineServices.getOrientation() % 2 != 0)
 			view.findViewById(R.id.headlines_fragment).setPadding(0, 0, 0, 0);
 
@@ -167,6 +216,172 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		m_combinedMode = m_prefs.getBoolean("combined_mode", false);
 	}
 
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		inflater.inflate(R.menu.headlines_menu, menu);
+
+		m_menu = menu;
+		
+		updateMenu();
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.d(TAG, "onOptionsMenuItemSelected");
+		
+		switch (item.getItemId()) {
+		case R.id.selection_select_none:
+			m_selectedArticles.clear();
+			notifyUpdated();
+			return true;			
+		case R.id.selection_toggle_unread:
+			if (true) {
+				ArticleList selected = getSelectedArticles();
+
+				if (selected.size() > 0) {
+					for (Article a : selected)
+						a.unread = !a.unread;
+
+					m_onlineServices.toggleArticlesUnread(selected);
+					notifyUpdated();
+				}
+			}
+			return true;
+		case R.id.selection_toggle_marked:
+			if (true) {
+				ArticleList selected = getSelectedArticles();
+
+				if (selected.size() > 0) {
+					for (Article a : selected)
+						a.marked = !a.marked;
+
+					m_onlineServices.toggleArticlesMarked(selected);
+					notifyUpdated();
+				}
+			}
+			return true;
+		case R.id.selection_toggle_published:
+			if (true) {
+				ArticleList selected = getSelectedArticles();
+
+				if (selected.size() > 0) {
+					for (Article a : selected)
+						a.published = !a.published;
+
+					m_onlineServices.toggleArticlesPublished(selected);
+					notifyUpdated();
+				}
+			}
+			return true;
+		case R.id.search:
+			if (m_onlineServices.isCompatMode()) {
+				Dialog dialog = new Dialog(getActivity());
+
+				final EditText edit = new EditText(getActivity());
+
+				AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+						.setTitle(R.string.search)
+						.setPositiveButton(getString(R.string.search),
+								new DialogInterface.OnClickListener() {
+
+									@Override
+									public void onClick(DialogInterface dialog,
+											int which) {
+										
+										String query = edit.getText().toString().trim();
+										
+										setSearchQuery(query);
+
+									}
+								})
+						.setNegativeButton(getString(R.string.cancel),
+								new DialogInterface.OnClickListener() {
+
+									@Override
+									public void onClick(DialogInterface dialog,
+											int which) {
+										
+										//
+
+									}
+								}).setView(edit);
+				
+				dialog = builder.create();
+				dialog.show();
+			}
+			
+			return true;
+		case R.id.headlines_select:
+			if (true) {
+				Dialog dialog = new Dialog(getActivity());
+				AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+						.setTitle(R.string.headlines_select_dialog)
+						.setSingleChoiceItems(
+								new String[] {
+										getString(R.string.headlines_select_all),
+										getString(R.string.headlines_select_unread),
+										getString(R.string.headlines_select_none) },
+								0, new DialogInterface.OnClickListener() {
+									@Override
+									public void onClick(DialogInterface dialog,
+											int which) {
+										switch (which) {
+										case 0:
+											setSelection(HeadlinesFragment.ArticlesSelection.ALL);
+											break;
+										case 1:
+											setSelection(HeadlinesFragment.ArticlesSelection.UNREAD);
+											break;
+										case 2:
+											setSelection(HeadlinesFragment.ArticlesSelection.NONE);
+											break;
+										}
+										dialog.cancel();
+										
+										updateMenu();
+									}
+								});
+
+				dialog = builder.create();
+				dialog.show();
+			}
+			return true;
+		case R.id.headlines_mark_as_read:
+			if (true) {
+				ArticleList articles = getUnreadArticles();
+
+				for (Article a : articles)
+					a.unread = false;
+
+				notifyUpdated();
+
+				ApiRequest req = new ApiRequest(getActivity().getApplicationContext());
+
+				final String articleIds = MainActivity.articlesToIdString(articles);
+
+				@SuppressWarnings("serial")
+				HashMap<String, String> map = new HashMap<String, String>() {
+					{
+						put("sid", m_onlineServices.getSessionId());
+						put("op", "updateArticle");
+						put("article_ids", articleIds);
+						put("mode", "0");
+						put("field", "2");
+					}
+				};
+
+				req.execute(map);
+			}
+			return true;
+
+		default:
+			Log.d(TAG,
+					"onOptionsItemSelected, unhandled id=" + item.getItemId());
+			return super.onOptionsItemSelected(item);	
+		}
+	}
+	
 	@Override
 	public void onItemClick(AdapterView<?> av, View view, int position, long id) {
 		ListView list = (ListView)av;
@@ -589,7 +804,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 							m_selectedArticles.remove(article);
 						}
 						
-						m_onlineServices.initMainMenu();
+						updateMenu();
 						
 						Log.d(TAG, "num selected: " + m_selectedArticles.size());
 					}
@@ -600,7 +815,48 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		}
 	}
 
-
+	private void updateMenu() {
+		if (m_menu != null) {
+			m_menu.setGroupVisible(R.id.menu_group_headlines, m_selectedArticles.size() == 0);
+			m_menu.setGroupVisible(R.id.menu_group_headlines_selection, m_selectedArticles.size() != 0);
+			
+			if (m_selectedArticles.size() == 0 && m_headlinesActionMode != null) {
+				m_headlinesActionMode.finish();
+			}
+			
+			if (m_selectedArticles.size() != 0 && m_headlinesActionMode == null && !m_onlineServices.isCompatMode()) {
+				m_headlinesActionMode = getActivity().startActionMode(m_headlinesActionModeCallback);
+			}
+			
+			MenuItem search = m_menu.findItem(R.id.search);					
+			search.setEnabled(m_onlineServices.getApiLevel() >= 2);
+			
+			if (!m_onlineServices.isCompatMode()) {
+				SearchView searchView = (SearchView) search.getActionView();
+				searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+					private String query = "";
+					
+					@Override
+					public boolean onQueryTextSubmit(String query) {
+						setSearchQuery(query);
+						this.query = query;
+						
+						return false;
+					}
+					
+					@Override
+					public boolean onQueryTextChange(String newText) {
+						if (newText.equals("") && !newText.equals(this.query)) {
+							setSearchQuery(newText);
+							this.query = newText;
+						}
+						
+						return false;
+					}
+				});
+			}
+		}
+	}
 
 	public void notifyUpdated() {
 		m_adapter.notifyDataSetChanged();

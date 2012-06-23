@@ -23,10 +23,14 @@ import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -34,6 +38,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ShareActionProvider;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -96,6 +101,8 @@ public class ArticleFragment extends Fragment {
 				title.setMovementMethod(LinkMovementMethod.getInstance());
 				title.setText(Html.fromHtml("<a href=\""+m_article.link.trim().replace("\"", "\\\"")+"\">" + titleStr + "</a>"));
 				registerForContextMenu(title);
+				setHasOptionsMenu(true);
+				setMenuVisibility(false);
 			}
 			
 			WebView web = (WebView)view.findViewById(R.id.content);
@@ -299,4 +306,32 @@ public class ArticleFragment extends Fragment {
 		//m_article = m_onlineServices.getSelectedArticle(); 
 	}
 
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		inflater.inflate(R.menu.article_menu, menu);
+		
+		if (android.os.Build.VERSION.SDK_INT >= 14) {			
+			ShareActionProvider shareProvider = (ShareActionProvider) menu.findItem(R.id.share_article).getActionProvider();
+		
+			shareProvider.setShareIntent(MainActivity.getShareIntent(m_article));
+		}
+		
+		menu.findItem(R.id.set_labels).setEnabled(m_onlineServices.getApiLevel() >= 1);
+		menu.findItem(R.id.article_set_note).setEnabled(m_onlineServices.getApiLevel() >= 1);
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.d(TAG, "onOptionsMenuItemSelected");
+		
+		switch (item.getItemId()) {
+		case R.id.share_article:
+			m_onlineServices.shareArticle(m_article);
+			return true;
+		default:
+			Log.d(TAG,
+					"onOptionsItemSelected, unhandled id=" + item.getItemId());
+			return super.onOptionsItemSelected(item);		
+		}
+	}
 }

@@ -1,6 +1,7 @@
 package org.fox.ttrss;
 
 import org.fox.ttrss.types.Article;
+import org.fox.ttrss.types.ArticleList;
 import org.fox.ttrss.types.Feed;
 import org.fox.ttrss.types.FeedCategory;
 
@@ -14,6 +15,10 @@ public interface OnlineServices {
 	public void openArticle(Article article, int compatAnimation);
 	public Article getRelativeArticle(Article article, RelativeArticle ra);
 	
+	public void toggleArticlesMarked(final ArticleList articles);
+	public void toggleArticlesUnread(final ArticleList articles);
+	public void toggleArticlesPublished(final ArticleList articles);
+	
 	public void onCatSelected(FeedCategory cat);
 	public void onFeedSelected(Feed feed);
 	
@@ -23,7 +28,10 @@ public interface OnlineServices {
 	public String getSessionId();
 	public boolean getUnreadArticlesOnly();
 	public boolean isSmallScreen();
+	public boolean isCompatMode();
 	public boolean getUnreadOnly();
+	public void setUnreadOnly(boolean unreadOnly);
+	public void shareArticle(Article article);
 	public int getApiLevel();
 	public void setSelectedArticle(Article article);
 	public int getOrientation();

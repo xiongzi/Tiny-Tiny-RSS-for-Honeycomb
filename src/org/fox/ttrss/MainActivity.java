@@ -98,8 +98,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	private SQLiteDatabase m_readableDb;
 	private SQLiteDatabase m_writableDb;
 
-	private ActionMode m_headlinesActionMode;
-	private HeadlinesActionModeCallback m_headlinesActionModeCallback;
 	private NavigationListener m_navigationListener;
 	private NavigationAdapter m_navigationAdapter;
 	private ArrayList<NavigationEntry> m_navigationEntries = new ArrayList<NavigationEntry>();
@@ -273,35 +271,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			super(context, textViewResourceId, items);
 		}
 	}
-	
-	private class HeadlinesActionModeCallback implements ActionMode.Callback {
-		
-		@Override
-		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-			return false;
-		}
-		
-		@Override
-		public void onDestroyActionMode(ActionMode mode) {
-			deselectAllArticles();
-			m_headlinesActionMode = null;
-		}
-		
-		@Override
-		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-			
-			 MenuInflater inflater = getMenuInflater();
-	            inflater.inflate(R.menu.headlines_action_menu, menu);
-			
-			return true;
-		}
-		
-		@Override
-		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-			onOptionsItemSelected(item);
-			return false;
-		}
-	};
 	
 	private BroadcastReceiver m_broadcastReceiver = new BroadcastReceiver() {
 
@@ -478,7 +447,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void toggleArticlesMarked(final ArticleList articles) {
+	@Override
+	public void toggleArticlesMarked(final ArticleList articles) {
 		ApiRequest req = new ApiRequest(getApplicationContext());
 
 		@SuppressWarnings("serial")
@@ -496,7 +466,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void toggleArticlesUnread(final ArticleList articles) {
+	@Override
+	public void toggleArticlesUnread(final ArticleList articles) {
 		ApiRequest req = new ApiRequest(getApplicationContext());
 
 		@SuppressWarnings("serial")
@@ -515,7 +486,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void toggleArticlesPublished(final ArticleList articles) {
+	@Override
+	public void toggleArticlesPublished(final ArticleList articles) {
 		ApiRequest req = new ApiRequest(getApplicationContext());
 
 		@SuppressWarnings("serial")
@@ -594,7 +566,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		}
 	} */
 
-	private void setUnreadOnly(boolean unread) {
+	@Override
+	public void setUnreadOnly(boolean unread) {
 		m_unreadOnly = unread;
 		m_lastRefresh = 0;
 		refresh();
@@ -700,7 +673,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			
 			m_navigationAdapter = new NavigationAdapter(this, android.R.layout.simple_spinner_dropdown_item, m_navigationEntries);
 			
-			m_headlinesActionModeCallback = new HeadlinesActionModeCallback();
 			m_navigationListener = new NavigationListener();
 			
 			getActionBar().setListNavigationCallbacks(m_navigationAdapter, m_navigationListener);
@@ -939,13 +911,13 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 		initMainMenu();
 
-		MenuItem item = menu.findItem(R.id.show_feeds);
+		/* MenuItem item = menu.findItem(R.id.show_feeds);
 
 		if (getUnreadOnly()) {
 			item.setTitle(R.string.menu_all_feeds);
 		} else {
 			item.setTitle(R.string.menu_unread_feeds);
-		}
+		} */
 
 		/*
 		 * item = menu.findItem(R.id.show_all_articles);
@@ -986,7 +958,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		refresh();
 	}
 	
-	private void deselectAllArticles() {
+	/* private void deselectAllArticles() {
 		HeadlinesFragment hf = (HeadlinesFragment) getSupportFragmentManager()
 									.findFragmentByTag(FRAG_HEADLINES);
 
@@ -998,7 +970,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				hf.notifyUpdated();
 			}
 		}
-	}
+	} */
 	
 	private void goBack(boolean allowQuit) {
 		if (m_smallScreenMode) {
@@ -1080,52 +1052,10 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		case android.R.id.home:
 			goBack(false);
 			return true;
-		case R.id.search:
-			if (hf != null && m_compatMode) {
-				Dialog dialog = new Dialog(this);
-
-				final EditText edit = new EditText(this);
-
-				AlertDialog.Builder builder = new AlertDialog.Builder(this)
-						.setTitle(R.string.search)
-						.setPositiveButton(getString(R.string.search),
-								new OnClickListener() {
-
-									@Override
-									public void onClick(DialogInterface dialog,
-											int which) {
-										
-										String query = edit.getText().toString().trim();
-										
-										hf.setSearchQuery(query);
-
-									}
-								})
-						.setNegativeButton(getString(R.string.cancel),
-								new OnClickListener() {
-
-									@Override
-									public void onClick(DialogInterface dialog,
-											int which) {
-										
-										//
-
-									}
-								}).setView(edit);
-				
-				dialog = builder.create();
-				dialog.show();
-			}
-			
-			return true;
 		case R.id.preferences:
 			Intent intent = new Intent(MainActivity.this,
 					PreferencesActivity.class);
 			startActivityForResult(intent, 0);
-			return true;
-		case R.id.update_feeds:
-			m_lastRefresh = 0;
-			refresh();
 			return true;
 		case R.id.logout:
 			logout();
@@ -1141,68 +1071,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				editArticleNote(m_selectedArticle);				
 			}
 			return true;
-		case R.id.headlines_select:
-			if (hf != null) {
-				Dialog dialog = new Dialog(this);
-				AlertDialog.Builder builder = new AlertDialog.Builder(this)
-						.setTitle(R.string.headlines_select_dialog)
-						.setSingleChoiceItems(
-								new String[] {
-										getString(R.string.headlines_select_all),
-										getString(R.string.headlines_select_unread),
-										getString(R.string.headlines_select_none) },
-								0, new DialogInterface.OnClickListener() {
-									@Override
-									public void onClick(DialogInterface dialog,
-											int which) {
-										switch (which) {
-										case 0:
-											hf.setSelection(HeadlinesFragment.ArticlesSelection.ALL);
-											break;
-										case 1:
-											hf.setSelection(HeadlinesFragment.ArticlesSelection.UNREAD);
-											break;
-										case 2:
-											hf.setSelection(HeadlinesFragment.ArticlesSelection.NONE);
-											break;
-										}
-										dialog.cancel();
-										initMainMenu();
-									}
-								});
-
-				dialog = builder.create();
-				dialog.show();
-			}
-			return true;
-		case R.id.headlines_mark_as_read:
-			if (hf != null) {
-				ArticleList articles = hf.getUnreadArticles();
-
-				for (Article a : articles)
-					a.unread = false;
-
-				hf.notifyUpdated();
-
-				ApiRequest req = new ApiRequest(getApplicationContext());
-
-				final String articleIds = articlesToIdString(articles);
-
-				@SuppressWarnings("serial")
-				HashMap<String, String> map = new HashMap<String, String>() {
-					{
-						put("sid", m_sessionId);
-						put("op", "updateArticle");
-						put("article_ids", articleIds);
-						put("mode", "0");
-						put("field", "2");
-					}
-				};
-
-				req.execute(map);
-				refresh();
-			}
-			return true;
 		case R.id.share_article:
 			if (android.os.Build.VERSION.SDK_INT < 14) {
 				shareArticle(m_selectedArticle);
@@ -1213,49 +1081,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				m_selectedArticle.marked = !m_selectedArticle.marked;
 				saveArticleMarked(m_selectedArticle);				
 				//updateHeadlines();
-			}
-			return true;
-		case R.id.selection_select_none:
-			deselectAllArticles();
-			return true;
-		case R.id.selection_toggle_unread:
-			if (hf != null) {
-				ArticleList selected = hf.getSelectedArticles();
-
-				if (selected.size() > 0) {
-					for (Article a : selected)
-						a.unread = !a.unread;
-
-					toggleArticlesUnread(selected);
-					hf.notifyUpdated();
-				}
-				refresh();
-			}
-			return true;
-		case R.id.selection_toggle_marked:
-			if (hf != null) {
-				ArticleList selected = hf.getSelectedArticles();
-
-				if (selected.size() > 0) {
-					for (Article a : selected)
-						a.marked = !a.marked;
-
-					toggleArticlesMarked(selected);
-					hf.notifyUpdated();
-				}
-			}
-			return true;
-		case R.id.selection_toggle_published:
-			if (hf != null) {
-				ArticleList selected = hf.getSelectedArticles();
-
-				if (selected.size() > 0) {
-					for (Article a : selected)
-						a.published = !a.published;
-
-					toggleArticlesPublished(selected);
-					hf.notifyUpdated();
-				}
 			}
 			return true;
 		case R.id.toggle_published:
@@ -1289,16 +1114,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				saveArticleUnread(m_selectedArticle);
 				updateHeadlines();
 			}
-			return true;
-		case R.id.show_feeds:
-			setUnreadOnly(!getUnreadOnly());
-
-			if (getUnreadOnly()) {
-				item.setTitle(R.string.menu_all_feeds);
-			} else {
-				item.setTitle(R.string.menu_unread_feeds);
-			}
-
 			return true;
 		case R.id.set_labels:
 			if (m_selectedArticle != null) {
@@ -1411,7 +1226,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		req.execute(map);
 	}
 	
-	private Intent getShareIntent(Article article) {
+	public static Intent getShareIntent(Article article) {
 		Intent intent = new Intent(Intent.ACTION_SEND);
 
 		intent.setType("text/plain");
@@ -1420,8 +1235,9 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 		return intent;
 	}
-	
-	private void shareArticle(Article article) {
+
+	@Override
+	public void shareArticle(Article article) {
 		if (article != null) {
 
 			Intent intent = getShareIntent(article);
@@ -1456,10 +1272,10 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	public void initMainMenu() {
 		if (m_menu != null) {
 
-			m_menu.setGroupVisible(R.id.menu_group_feeds, false);
-			m_menu.setGroupVisible(R.id.menu_group_headlines, false);
-			m_menu.setGroupVisible(R.id.menu_group_headlines_selection, false);
-			m_menu.setGroupVisible(R.id.menu_group_article, false);
+			//m_menu.setGroupVisible(R.id.menu_group_feeds, false);
+			//m_menu.setGroupVisible(R.id.menu_group_headlines, false);
+			//m_menu.setGroupVisible(R.id.menu_group_headlines_selection, false);
+			//m_menu.setGroupVisible(R.id.menu_group_article, false);
 
 			if (m_sessionId != null) {
 
@@ -1476,62 +1292,21 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 				if (numSelected != 0) {
 					if (m_compatMode) {
-						m_menu.setGroupVisible(R.id.menu_group_headlines_selection, true);
+						//m_menu.setGroupVisible(R.id.menu_group_headlines_selection, true);
 					} else {
-						if (m_headlinesActionMode == null)
-							m_headlinesActionMode = startActionMode(m_headlinesActionModeCallback);
+						//if (m_headlinesActionMode == null)
+						//	m_headlinesActionMode = startActionMode(m_headlinesActionModeCallback);
 					}
 					
 				} else if (m_selectedArticle != null) {
-					m_menu.setGroupVisible(R.id.menu_group_article, true);
+					//m_menu.setGroupVisible(R.id.menu_group_article, true);
 				} else if (m_activeFeed != null) {
-					m_menu.setGroupVisible(R.id.menu_group_headlines, true);
+					//m_menu.setGroupVisible(R.id.menu_group_headlines, true);
 					
-					MenuItem search = m_menu.findItem(R.id.search);
 					
-					search.setEnabled(m_apiLevel >= 2);
-					
-					if (!m_compatMode) {
-						SearchView searchView = (SearchView) search.getActionView();
-						searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-							private String query = "";
-							
-							@Override
-							public boolean onQueryTextSubmit(String query) {
-								HeadlinesFragment frag = (HeadlinesFragment) getSupportFragmentManager()
-										.findFragmentByTag(FRAG_HEADLINES);
-								
-								if (frag != null) {
-									frag.setSearchQuery(query);
-									this.query = query;
-								}
-								
-								return false;
-							}
-							
-							@Override
-							public boolean onQueryTextChange(String newText) {
-								if (newText.equals("") && !newText.equals(this.query)) {
-									HeadlinesFragment frag = (HeadlinesFragment) getSupportFragmentManager()
-											.findFragmentByTag(FRAG_HEADLINES);
-									
-									if (frag != null) {
-										frag.setSearchQuery(newText);
-										this.query = newText;
-									}
-								}
-								
-								return false;
-							}
-						});
-					}
 					
 				} else {
-					m_menu.setGroupVisible(R.id.menu_group_feeds, true);
-				}
-
-				if (numSelected == 0 && m_headlinesActionMode != null) {
-					m_headlinesActionMode.finish();
+					//m_menu.setGroupVisible(R.id.menu_group_feeds, true);
 				}
 
 				if (!m_compatMode) {
@@ -1575,19 +1350,19 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 					//	getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticle != null || m_activeCategory != null || m_activeFeed != null);
 					//}
 					
-					if (android.os.Build.VERSION.SDK_INT >= 14) {			
+					/* if (android.os.Build.VERSION.SDK_INT >= 14) {			
 						ShareActionProvider shareProvider = (ShareActionProvider) m_menu.findItem(R.id.share_article).getActionProvider();
 						
 						if (m_selectedArticle != null) {
 							Log.d(TAG, "setting up share provider");
 							shareProvider.setShareIntent(getShareIntent(m_selectedArticle));
 						}
-					}
+					} */
 					
 				}
 				
-				m_menu.findItem(R.id.set_labels).setEnabled(m_apiLevel >= 1);
-				m_menu.findItem(R.id.article_set_note).setEnabled(m_apiLevel >= 1);
+				//m_menu.findItem(R.id.set_labels).setEnabled(m_apiLevel >= 1);
+				//m_menu.findItem(R.id.article_set_note).setEnabled(m_apiLevel >= 1);
 
 				m_menu.findItem(R.id.donate).setVisible(BillingHelper.isBillingSupported());
 								
@@ -2137,13 +1912,6 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				}
 			}
 			return true;
-		case R.id.share_article:
-			if (hf != null) {
-				Article article = hf.getArticleAtPosition(info.position);
-				if (article != null)
-					shareArticle(article);
-			}
-			return true;
 		case R.id.catchup_above:
 			if (hf != null) {
 				Article article = hf.getArticleAtPosition(info.position);
@@ -2343,5 +2111,10 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		refresh.putExtra("sessionId", m_sessionId);
 		startActivity(refresh);
 		finish();
+	}
+
+	@Override
+	public boolean isCompatMode() {
+		return m_compatMode;
 	}
 }

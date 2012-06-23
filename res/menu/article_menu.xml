@@ -1,0 +1,36 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/toggle_marked"
+        android:icon="@drawable/ic_menu_marked"
+        android:showAsAction="ifRoom"
+        android:title="@string/article_toggle_marked"/>
+    <item
+        android:id="@+id/toggle_published"
+        android:icon="@drawable/ic_menu_rss"
+        android:showAsAction="ifRoom"
+        android:title="@string/article_toggle_published"/>
+    <item
+        android:id="@+id/share_article"
+        android:actionProviderClass="android.widget.ShareActionProvider"
+        android:icon="@android:drawable/ic_menu_share"
+        android:showAsAction="ifRoom"
+        android:title="@string/share_article"/>
+    <item
+        android:id="@+id/set_unread"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:showAsAction=""
+        android:title="@string/article_set_unread"/>
+    <item
+        android:id="@+id/catchup_above"
+        android:icon="@drawable/ic_menu_tick"
+        android:title="@string/article_mark_read_above"/>
+    <item
+        android:id="@+id/set_labels"
+        android:icon="@drawable/ic_menu_marked"
+        android:title="@string/article_set_labels"/>
+    <item
+        android:id="@+id/article_set_note"
+        android:showAsAction=""
+        android:title="@string/article_set_note"/>
+
+</menu>

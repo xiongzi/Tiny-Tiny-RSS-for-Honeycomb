@@ -66,6 +66,7 @@ public class ArticlePager extends Fragment {
 		
 		pager.setAdapter(m_adapter);
 		pager.setCurrentItem(position);
+		
 		pager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
 			@Override
@@ -73,7 +74,9 @@ public class ArticlePager extends Fragment {
 			}
 
 			@Override
-			public void onPageScrolled(int arg0, float arg1, int arg2) {
+			public void onPageScrolled(int position, float arg1, int arg2) {
+				Fragment frag = m_adapter.getItem(position);
+				frag.setMenuVisibility(false);
 			}
 
 			@Override
@@ -86,7 +89,10 @@ public class ArticlePager extends Fragment {
 						m_onlineServices.saveArticleUnread(article);
 					}
 					m_onlineServices.setSelectedArticle(article);
-					
+
+					Fragment frag = m_adapter.getItem(position);
+					frag.setMenuVisibility(true);
+
 					//Log.d(TAG, "Page #" + position + "/" + m_adapter.getCount());
 					
 					if (position == m_adapter.getCount() - 5) {

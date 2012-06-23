@@ -17,9 +17,13 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -83,6 +87,43 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 	}
 
 	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		inflater.inflate(R.menu.feeds_menu, menu);
+
+		MenuItem item = menu.findItem(R.id.show_feeds);
+
+		if (m_onlineServices.getUnreadOnly()) {
+			item.setTitle(R.string.menu_all_feeds);
+		} else {
+			item.setTitle(R.string.menu_unread_feeds);
+		}
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.d(TAG, "onOptionsMenuItemSelected");
+		
+		switch (item.getItemId()) {
+		case R.id.update_feeds:
+			refresh(true);
+			return true;
+		case R.id.show_feeds:
+			m_onlineServices.setUnreadOnly(!m_onlineServices.getUnreadOnly());
+	
+			if (m_onlineServices.getUnreadOnly()) {
+				item.setTitle(R.string.menu_all_feeds);
+			} else {
+				item.setTitle(R.string.menu_unread_feeds);
+			}
+			return true;
+		default:
+			Log.d(TAG,
+					"onOptionsItemSelected, unhandled id=" + item.getItemId());
+			return super.onOptionsItemSelected(item);	
+		}
+	}
+	
+	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
 	    ContextMenuInfo menuInfo) {
 		
@@ -121,6 +162,8 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 			refresh(false);
 		else
 			getActivity().setProgressBarIndeterminateVisibility(false);
+		
+		setHasOptionsMenu(true);
 		
 		return view; 
 	}

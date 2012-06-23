@@ -45,6 +45,9 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -120,6 +123,43 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		}
 		
 	}
+	
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		inflater.inflate(R.menu.feeds_menu, menu);
+
+		MenuItem item = menu.findItem(R.id.show_feeds);
+
+		if (m_onlineServices.getUnreadOnly()) {
+			item.setTitle(R.string.menu_all_feeds);
+		} else {
+			item.setTitle(R.string.menu_unread_feeds);
+		}
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.d(TAG, "onOptionsMenuItemSelected");
+		
+		switch (item.getItemId()) {
+		case R.id.update_feeds:
+			refresh(true);
+			return true;
+		case R.id.show_feeds:
+			m_onlineServices.setUnreadOnly(!m_onlineServices.getUnreadOnly());
+	
+			if (m_onlineServices.getUnreadOnly()) {
+				item.setTitle(R.string.menu_all_feeds);
+			} else {
+				item.setTitle(R.string.menu_unread_feeds);
+			}
+			return true;
+		default:
+			Log.d(TAG,
+					"onOptionsItemSelected, unhandled id=" + item.getItemId());
+			return super.onOptionsItemSelected(item);	
+		}
+	}
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
@@ -158,6 +198,8 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		registerForContextMenu(list);
 		
 		m_enableFeedIcons = m_prefs.getBoolean("download_feed_icons", false);
+		
+		setHasOptionsMenu(true);
 		
 		if (m_feeds == null || m_feeds.size() == 0)
 			refresh(false);

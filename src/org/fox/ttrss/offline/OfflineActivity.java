@@ -257,7 +257,7 @@ public class OfflineActivity extends FragmentActivity implements
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 			
 			 MenuInflater inflater = getMenuInflater();
-	            inflater.inflate(R.menu.headlines_action_menu, menu);
+	            inflater.inflate(R.menu.headlines_action_context_menu, menu);
 			
 			return true;
 		}
