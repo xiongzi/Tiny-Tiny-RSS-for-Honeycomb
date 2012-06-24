@@ -119,6 +119,7 @@ public class OfflineActivity extends FragmentActivity implements
 				
 				ft.replace(R.id.headlines_fragment, new DummyFragment(), "");
 
+				findViewById(R.id.feeds_fragment).setVisibility(View.VISIBLE);
 				//findViewById(R.id.article_fragment).setVisibility(View.GONE);
 
 				ft.replace(R.id.article_fragment, new DummyFragment(), "");
@@ -162,6 +163,7 @@ public class OfflineActivity extends FragmentActivity implements
 			} else {
 				ft.replace(R.id.article_fragment, new DummyFragment(), "");
 
+				findViewById(R.id.feeds_fragment).setVisibility(View.VISIBLE);
 				//findViewById(R.id.article_fragment).setVisibility(View.GONE);				
 
 				ft.replace(R.id.headlines_fragment, new DummyFragment(), "");				
@@ -500,7 +502,7 @@ public class OfflineActivity extends FragmentActivity implements
 		} else {
 			if (m_selectedArticleId != 0) {
 				closeArticle();
-			} else if (m_activeFeedId != 0) {
+			/* } else if (m_activeFeedId != 0) {
 				m_activeFeedId = 0;
 				
 				OfflineFeedsFragment ff = (OfflineFeedsFragment) getSupportFragmentManager()
@@ -522,7 +524,7 @@ public class OfflineActivity extends FragmentActivity implements
 				}
 
 				refreshViews();
-				initMainMenu();
+				initMainMenu(); */
 			} else if (m_activeCatId != -1) {
 				closeCategory();	
 			} else if (allowQuit) {
@@ -1031,11 +1033,11 @@ public class OfflineActivity extends FragmentActivity implements
 					getActionBar().setTitle(R.string.app_name);
 				}
 				
-				//if (!m_smallScreenMode) {
-				// getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticleId != 0);
-				//} else {
+				if (m_smallScreenMode) {
 					getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticleId != 0 || m_activeFeedId != 0 || m_activeCatId != -1);
-				//}
+				} else {					
+					getActionBar().setDisplayHomeAsUpEnabled(m_selectedArticleId != 0 || m_activeCatId != -1);
+				}
 					
 				if (android.os.Build.VERSION.SDK_INT >= 14) {			
 					ShareActionProvider shareProvider = (ShareActionProvider) m_menu.findItem(R.id.share_article).getActionProvider();
@@ -1488,7 +1490,8 @@ public class OfflineActivity extends FragmentActivity implements
 			ft.hide(getSupportFragmentManager().findFragmentByTag(FRAG_HEADLINES));
 			ft.add(R.id.fragment_container, frag, FRAG_ARTICLE);
 		} else {
-			findViewById(R.id.article_fragment).setVisibility(View.VISIBLE);
+			findViewById(R.id.feeds_fragment).setVisibility(getOrientation() % 2 != 0 ? View.GONE : View.VISIBLE);
+			findViewById(R.id.article_fragment).setVisibility(View.VISIBLE);			
 			ft.replace(R.id.article_fragment, frag, FRAG_ARTICLE);
 			
 			refreshViews();

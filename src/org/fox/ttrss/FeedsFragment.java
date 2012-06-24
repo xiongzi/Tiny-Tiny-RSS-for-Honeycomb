@@ -438,7 +438,7 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		public int getItemViewType(int position) {
 			Feed feed = items.get(position);
 			
-			if (m_selectedFeed != null && feed.id == m_selectedFeed.id) {
+			if (!m_onlineServices.isSmallScreen() && m_selectedFeed != null && feed.id == m_selectedFeed.id) {
 				return VIEW_SELECTED;
 			} else {
 				return VIEW_NORMAL;				
@@ -649,7 +649,8 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 	public void setSelectedFeed(Feed feed) {
 		m_selectedFeed = feed;
 		updateMenu();
-	}	
+		m_adapter.notifyDataSetChanged();
+	}
 
 	private void updateMenu() {
 		setMenuVisibility(m_selectedFeed == null);

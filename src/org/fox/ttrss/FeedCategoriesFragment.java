@@ -367,7 +367,7 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 		public int getItemViewType(int position) {
 			FeedCategory cat = items.get(position);
 			
-			if (m_selectedCat != null && cat.id == m_selectedCat.id) {
+			if (!m_onlineServices.isSmallScreen() && m_selectedCat != null && cat.id == m_selectedCat.id) {
 				return VIEW_SELECTED;
 			} else {
 				return VIEW_NORMAL;				
