@@ -11,11 +11,11 @@
                 android:showAsAction="ifRoom"
                 android:title="@string/update_feeds"/>
 
-            <item
+            <!--  <item
                 android:id="@+id/go_offline"
                 android:icon="@drawable/ic_menu_cloud"
                 android:showAsAction=""
-                android:title="@string/go_offline"/>
+                android:title="@string/go_offline"/> -->
 
             <item
                 android:id="@+id/logout"

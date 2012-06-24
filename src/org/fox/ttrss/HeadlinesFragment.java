@@ -276,6 +276,10 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 			m_searchQuery = (String) savedInstanceState.getCharSequence("searchQuery");
 		}
 
+		if (!m_onlineServices.isCompatMode()) {
+			m_headlinesActionModeCallback = new HeadlinesActionModeCallback();
+		}
+
 		View view = inflater.inflate(R.layout.headlines_fragment, container, false);
 
 		ListView list = (ListView)view.findViewById(R.id.headlines);		
@@ -287,10 +291,6 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		registerForContextMenu(list);
 		setHasOptionsMenu(true);
 
-		if (!m_onlineServices.isCompatMode()) {
-			m_headlinesActionModeCallback = new HeadlinesActionModeCallback();
-		}
-		
 		if (m_onlineServices.isSmallScreen() || m_onlineServices.getOrientation() % 2 != 0)
 			view.findViewById(R.id.headlines_fragment).setPadding(0, 0, 0, 0);
 
@@ -901,6 +901,10 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 							m_selectedArticles.remove(article);
 						}
 						
+						if (m_selectedArticles.size() == 0 && m_headlinesActionMode != null) {
+							m_headlinesActionMode.finish();
+						}
+
 						updateMenu();
 						
 						Log.d(TAG, "num selected: " + m_selectedArticles.size());
@@ -914,43 +918,45 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 
 	private void updateMenu() {
 		if (m_menu != null) {
-			m_menu.setGroupVisible(R.id.menu_group_headlines, m_selectedArticles.size() == 0);
-			m_menu.setGroupVisible(R.id.menu_group_headlines_selection, m_selectedArticles.size() != 0);
-			
-			if (m_selectedArticles.size() == 0 && m_headlinesActionMode != null) {
-				m_headlinesActionMode.finish();
-			}
-			
-			if (m_selectedArticles.size() != 0 && m_headlinesActionMode == null && !m_onlineServices.isCompatMode()) {
-				m_headlinesActionMode = getActivity().startActionMode(m_headlinesActionModeCallback);
-			}
-			
-			MenuItem search = m_menu.findItem(R.id.search);					
-			search.setEnabled(m_onlineServices.getApiLevel() >= 2);
-			
-			if (!m_onlineServices.isCompatMode()) {
-				SearchView searchView = (SearchView) search.getActionView();
-				searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-					private String query = "";
-					
-					@Override
-					public boolean onQueryTextSubmit(String query) {
-						setSearchQuery(query);
-						this.query = query;
+			if (m_onlineServices.getSelectedArticle() == null) {
+
+				m_menu.setGroupVisible(R.id.menu_group_headlines, m_selectedArticles.size() == 0);
+				m_menu.setGroupVisible(R.id.menu_group_headlines_selection, m_selectedArticles.size() != 0);
+
+				if (m_selectedArticles.size() != 0 && m_headlinesActionMode == null && !m_onlineServices.isCompatMode()) {
+					m_headlinesActionMode = getActivity().startActionMode(m_headlinesActionModeCallback);
+				}
+				
+				MenuItem search = m_menu.findItem(R.id.search);					
+				search.setEnabled(m_onlineServices.getApiLevel() >= 2);
+				
+				if (!m_onlineServices.isCompatMode()) {
+					SearchView searchView = (SearchView) search.getActionView();
+					searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+						private String query = "";
 						
-						return false;
-					}
-					
-					@Override
-					public boolean onQueryTextChange(String newText) {
-						if (newText.equals("") && !newText.equals(this.query)) {
-							setSearchQuery(newText);
-							this.query = newText;
+						@Override
+						public boolean onQueryTextSubmit(String query) {
+							setSearchQuery(query);
+							this.query = query;
+							
+							return false;
 						}
 						
-						return false;
-					}
-				});
+						@Override
+						public boolean onQueryTextChange(String newText) {
+							if (newText.equals("") && !newText.equals(this.query)) {
+								setSearchQuery(newText);
+								this.query = newText;
+							}
+							
+							return false;
+						}
+					});
+				}
+			} else {
+				m_menu.setGroupVisible(R.id.menu_group_headlines, false);
+				m_menu.setGroupVisible(R.id.menu_group_headlines_selection, false);
 			}
 		}
 	}
@@ -961,6 +967,8 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		Article article = m_onlineServices.getSelectedArticle();
 
 		setActiveArticle(article);
+		
+		updateMenu();
 	}
 
 	public ArticleList getAllArticles() {

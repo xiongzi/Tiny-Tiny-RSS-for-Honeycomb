@@ -1614,13 +1614,15 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		ft.commit();
 	}
 
-	/* private Feed getActiveFeed() {
+	@Override
+	public Feed getActiveFeed() {
 		return m_activeFeed;
 	}
 
-	private FeedCategory getActiveCategory() {
+	@Override
+	public FeedCategory getActiveCategory() {
 		return m_activeCategory;
-	} */
+	}
 
 	private void logout() {
 		if (m_refreshTask != null) {

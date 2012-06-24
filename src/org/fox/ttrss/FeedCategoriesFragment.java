@@ -98,6 +98,8 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 		} else {
 			item.setTitle(R.string.menu_unread_feeds);
 		}
+		
+		updateMenu();
 	}
 	
 	@Override
@@ -441,9 +443,14 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 	public void setSelectedCategory(FeedCategory cat) {
 		m_selectedCat = cat;
 		m_adapter.notifyDataSetChanged();
+		updateMenu();
 	}
 	
 	public FeedCategory getSelectedCategory() {
 		return m_selectedCat;
-	}	
+	}
+	
+	private void updateMenu() {
+		setMenuVisibility(m_selectedCat == null);
+	}
 }

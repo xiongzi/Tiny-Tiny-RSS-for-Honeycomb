@@ -24,6 +24,8 @@ public interface OnlineServices {
 	
 	public void viewCategory(FeedCategory cat, boolean openAsFeed);
 	public void catchupFeed(final Feed feed);
+	public Feed getActiveFeed();
+	public FeedCategory getActiveCategory();
 	
 	public void initMainMenu();
 	//public void login();
