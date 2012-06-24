@@ -33,7 +33,7 @@ public class Article implements Parcelable {
 		this.link = "";
 		this.tags = new ArrayList<String>();
 	}
-
+	
 	@Override
 	public int describeContents() {
 		return 0;

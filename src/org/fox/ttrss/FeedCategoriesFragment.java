@@ -7,14 +7,17 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
+import org.fox.ttrss.types.Article;
 import org.fox.ttrss.types.FeedCategory;
 import org.fox.ttrss.types.FeedCategoryList;
+import org.fox.ttrss.types.FeedList;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.view.ContextMenu;
@@ -80,6 +83,15 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 				return a.id - b.id;
 		}
 		
+	}
+	
+	public FeedCategoriesFragment() {
+
+	}
+	
+	public FeedCategoriesFragment(FeedCategoryList cats, FeedCategory selectedCategory) {
+		m_cats = cats;
+		m_selectedCat = selectedCategory;
 	}
 
 	@Override
@@ -360,5 +372,11 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 	
 	public FeedCategory getSelectedCategory() {
 		return m_selectedCat;
-	}	
+	}
+	
+	public FeedCategoryList getAllCategories() {
+		return m_cats;
+	}
+	
+
 }

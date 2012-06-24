@@ -11,11 +11,11 @@ public interface OnlineServices {
 	public void saveArticleUnread(final Article article);
 	public void saveArticleMarked(final Article article);
 	public void saveArticlePublished(final Article article);
-	public void openArticle(Article article, int compatAnimation);
 	public Article getRelativeArticle(Article article, RelativeArticle ra);
 	
 	public void onCatSelected(FeedCategory cat);
 	public void onFeedSelected(Feed feed);
+	public void onArticleSelected(Article article);
 	
 	public void initMainMenu();
 	//public void login();

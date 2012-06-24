@@ -25,6 +25,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.Html;
@@ -94,7 +95,13 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	public HeadlinesFragment(Feed feed) {
 		m_feed = feed;
 	}
-	
+
+	public HeadlinesFragment(Feed feed, ArticleList articles, Article selectedArticle) {
+		m_feed = feed;
+		m_articles = articles;
+		m_activeArticle = selectedArticle;
+	}
+
 	public HeadlinesFragment() {
 		//
 	}
@@ -180,7 +187,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 					article.unread = false;
 					m_onlineServices.saveArticleUnread(article);
 				} else {
-					m_onlineServices.openArticle(article, 0);
+					m_onlineServices.onArticleSelected(article);
 				}
 				
 				m_activeArticle = article;

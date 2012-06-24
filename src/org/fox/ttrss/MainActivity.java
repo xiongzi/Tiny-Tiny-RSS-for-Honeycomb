@@ -40,6 +40,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -162,7 +163,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 					ft.replace(R.id.feeds_fragment, new FeedsFragment(), FRAG_FEEDS);
 				}
 				
-				findViewById(R.id.article_fragment).setVisibility(View.GONE);
+				//findViewById(R.id.article_fragment).setVisibility(View.GONE);
 				findViewById(R.id.feeds_fragment).setVisibility(View.VISIBLE);
 				
 				ft.replace(R.id.headlines_fragment, new DummyFragment(), "");
@@ -211,7 +212,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				}
 				
 			} else {
-				findViewById(R.id.article_fragment).setVisibility(View.GONE);
+				//findViewById(R.id.article_fragment).setVisibility(View.GONE);
 				findViewById(R.id.feeds_fragment).setVisibility(View.VISIBLE);
 				
 				ft.replace(R.id.headlines_fragment, new DummyFragment(), "");
@@ -238,8 +239,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 			m_selectedArticle = null;
 			
-			if (!m_smallScreenMode)
-				findViewById(R.id.article_fragment).setVisibility(View.GONE);							
+			//if (!m_smallScreenMode)
+			//	findViewById(R.id.article_fragment).setVisibility(View.GONE);							
 
 			viewFeed(m_feed, false);
 		}
@@ -654,6 +655,18 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		
 		m_themeName = m_prefs.getString("theme", "THEME_DARK");
 
+		Bundle extras = getIntent().getExtras();
+		
+		if (extras != null) {
+			m_sessionId = extras.getString("sessionId");
+			m_activeFeed = extras.getParcelable("activeFeed");
+			m_activeCategory = extras.getParcelable("activeCategory");
+			m_apiLevel = extras.getInt("apiLevel");
+			
+			GlobalState gs = (GlobalState)getApplication();
+			m_selectedArticle = gs.m_selectedArticle;			
+		}
+		
 		if (savedInstanceState != null) {
 			m_sessionId = savedInstanceState.getString("sessionId");
 			m_unreadOnly = savedInstanceState.getBoolean("unreadOnly");
@@ -693,7 +706,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		if (!m_compatMode) {
 			
 			if (!m_smallScreenMode) {				
-				findViewById(R.id.feeds_fragment).setVisibility(m_selectedArticle != null && getOrientation() % 2 != 0 ? View.GONE : View.VISIBLE);
+				findViewById(R.id.feeds_fragment).setVisibility(m_selectedArticle != null /* && getOrientation() % 2 != 0 */ ? View.GONE : View.VISIBLE);
 				findViewById(R.id.article_fragment).setVisibility(m_selectedArticle != null ? View.VISIBLE : View.GONE);
 			}
 			
@@ -723,6 +736,40 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 				}
 			}
 			ft.commit();
+		} else {
+			if (m_selectedArticle != null) {
+				HeadlinesFragment hf = (HeadlinesFragment)getSupportFragmentManager().findFragmentByTag(FRAG_HEADLINES);
+
+				// maybe we're rotated or something, then fragment would be already instantiated
+				if (hf == null) {
+					FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+					GlobalState gs = (GlobalState)getApplication();
+					
+					hf = new HeadlinesFragment(m_activeFeed, 
+						gs.m_articles, 
+						m_selectedArticle);
+
+					if (m_activeFeed != null) {
+						if (m_activeFeed.is_cat) {
+							FeedCategoriesFragment cf = new FeedCategoriesFragment(gs.m_categories,
+									gs.m_selectedCategory);
+							
+							ft.replace(R.id.feeds_fragment, cf, FRAG_CATS);							
+						} else {
+							
+						}
+					}
+					
+					if (m_activeCategory != null) {
+						
+					}
+				
+					ft.replace(R.id.headlines_fragment, hf, FRAG_HEADLINES);
+					ft.commit();
+				
+					openArticle(m_selectedArticle, 0);
+				}
+			}
 		}
 
 		if (m_isOffline) {
@@ -1038,8 +1085,9 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			}
 		} else {
 			if (m_selectedArticle != null) {
-				closeArticle();
-				refresh();
+				//closeArticle();
+				//refresh();
+				finish();
 			/* } else if (m_activeFeed != null) {
 				closeFeed(); */	
 			} else if (m_activeCategory != null) {
@@ -1459,8 +1507,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			ft.remove(getSupportFragmentManager().findFragmentByTag(FRAG_ARTICLE));
 			ft.show(getSupportFragmentManager().findFragmentByTag(FRAG_HEADLINES));
 		} else {
-			findViewById(R.id.feeds_fragment).setVisibility(View.VISIBLE);	
-			findViewById(R.id.article_fragment).setVisibility(View.GONE);
+			//findViewById(R.id.feeds_fragment).setVisibility(View.VISIBLE);	
+			//findViewById(R.id.article_fragment).setVisibility(View.GONE);
 			ft.replace(R.id.article_fragment, new DummyFragment(), FRAG_ARTICLE);
 
 			updateHeadlines();
@@ -1810,7 +1858,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		return m_selectedArticle;
 	}
 
-	public void viewFeed(Feed feed, boolean append) {
+	private void viewFeed(Feed feed, boolean append) {
 		Log.d(TAG, "viewFeeed/" + feed.id);
 		
 		m_activeFeed = feed;
@@ -1841,8 +1889,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 				ft.add(R.id.fragment_container, hf, FRAG_HEADLINES);
 			} else {
-				findViewById(R.id.article_fragment).setVisibility(View.GONE);
-				findViewById(R.id.headlines_fragment).setVisibility(View.VISIBLE);
+				//findViewById(R.id.article_fragment).setVisibility(View.GONE);
+				//findViewById(R.id.headlines_fragment).setVisibility(View.VISIBLE);
 				ft.replace(R.id.headlines_fragment, hf, FRAG_HEADLINES);
 			}
 			ft.commit();
@@ -1858,7 +1906,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		initMainMenu();
 	}
 
-	public void viewCategory(FeedCategory cat, boolean openAsFeed) {
+	private void viewCategory(FeedCategory cat, boolean openAsFeed) {
 
 		Log.d(TAG, "viewCategory");
 
@@ -1894,7 +1942,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		initMainMenu();
 	}
 
-	public void openArticle(Article article, int compatAnimation) {
+	private void openArticle(Article article, int compatAnimation) {
 		m_selectedArticle = article;
 
 		if (article.unread) {
@@ -1924,8 +1972,8 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			ft.hide(getSupportFragmentManager().findFragmentByTag(FRAG_HEADLINES));
 			ft.add(R.id.fragment_container, frag, FRAG_ARTICLE);
 		} else {
-			findViewById(R.id.feeds_fragment).setVisibility(getOrientation() % 2 != 0 ? View.GONE : View.VISIBLE);
-			findViewById(R.id.article_fragment).setVisibility(View.VISIBLE);
+			//findViewById(R.id.feeds_fragment).setVisibility(getOrientation() % 2 != 0 ? View.GONE : View.VISIBLE);
+			//findViewById(R.id.article_fragment).setVisibility(View.VISIBLE);
 			ft.replace(R.id.article_fragment, frag, FRAG_ARTICLE);
 			
 			if (getOrientation() % 2 == 0) refresh();
@@ -2295,6 +2343,38 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 		boolean browse = m_prefs.getBoolean("browse_cats_like_feeds", false);
 
 		viewCategory(cat, browse && cat.id >= 0);
+	}
+
+	@Override
+	public void onArticleSelected(Article article) {
+		Log.d(TAG, "onArticleSelected");
+		m_selectedArticle = article;
+		
+		if (m_smallScreenMode || findViewById(R.id.article_fragment).getVisibility() != View.GONE) {
+			openArticle(article, 0);
+		} else {		
+			Intent viewfeed = new Intent(MainActivity.this, MainActivity.class);
+			viewfeed.putExtra("sessionId", m_sessionId);
+			viewfeed.putExtra("activeFeed", m_activeFeed);
+			viewfeed.putExtra("activeCategory", m_activeCategory);
+			viewfeed.putExtra("apiLevel", m_apiLevel);
+			
+			HeadlinesFragment hf = (HeadlinesFragment)getSupportFragmentManager().findFragmentByTag(FRAG_HEADLINES);			
+
+			GlobalState gs = (GlobalState)getApplication();
+
+			if (hf != null) {
+				gs.m_articles = hf.getAllArticles();
+				gs.m_selectedArticle = m_selectedArticle;
+			}
+
+			FeedCategoriesFragment cf = (FeedCategoriesFragment)getSupportFragmentManager().findFragmentByTag(FRAG_CATS);			
+			if (cf != null) {
+				gs.m_categories = cf.getAllCategories();
+			}
+			
+			startActivity(viewfeed);
+		}
 	}
 
 	@Override

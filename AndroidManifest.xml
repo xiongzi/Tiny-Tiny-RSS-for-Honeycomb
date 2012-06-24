@@ -12,6 +12,7 @@
     <uses-permission android:name="com.android.vending.BILLING" />
 
     <application
+        android:name=".GlobalState"
         android:allowBackup="true"
         android:backupAgent=".util.PrefsBackupAgent"
         android:hardwareAccelerated="true"
