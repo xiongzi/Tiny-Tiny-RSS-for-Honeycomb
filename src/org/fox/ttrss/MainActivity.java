@@ -738,14 +738,12 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			ft.commit();
 		} else {
 			if (m_selectedArticle != null) {
-				HeadlinesFragment hf = (HeadlinesFragment)getSupportFragmentManager().findFragmentByTag(FRAG_HEADLINES);
-
 				// maybe we're rotated or something, then fragment would be already instantiated
-				if (hf == null) {
+				if (savedInstanceState == null) {
 					FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
 					GlobalState gs = (GlobalState)getApplication();
 					
-					hf = new HeadlinesFragment(m_activeFeed, 
+					HeadlinesFragment hf = new HeadlinesFragment(m_activeFeed, 
 						gs.m_articles, 
 						m_selectedArticle);
 
@@ -972,6 +970,12 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 			m_refreshTimer = new Timer("Refresh");
 
 			m_refreshTimer.schedule(m_refreshTask, 60 * 1000L, 120 * 1000L);
+			
+			if (m_activeFeed != null && m_selectedArticle == null && !m_smallScreenMode) {
+				updateHeadlines();
+				refresh();
+			}
+			
 		} else {
 			if (!m_isLoggingIn) {
 				login();
@@ -2348,9 +2352,9 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 	@Override
 	public void onArticleSelected(Article article) {
 		Log.d(TAG, "onArticleSelected");
-		m_selectedArticle = article;
-		
 		if (m_smallScreenMode || findViewById(R.id.article_fragment).getVisibility() != View.GONE) {
+			m_selectedArticle = article;
+
 			openArticle(article, 0);
 		} else {		
 			Intent viewfeed = new Intent(MainActivity.this, MainActivity.class);
@@ -2365,7 +2369,7 @@ public class MainActivity extends FragmentActivity implements OnlineServices {
 
 			if (hf != null) {
 				gs.m_articles = hf.getAllArticles();
-				gs.m_selectedArticle = m_selectedArticle;
+				gs.m_selectedArticle = article;
 			}
 
 			FeedCategoriesFragment cf = (FeedCategoriesFragment)getSupportFragmentManager().findFragmentByTag(FRAG_CATS);			
