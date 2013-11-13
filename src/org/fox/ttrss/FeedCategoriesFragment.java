@@ -11,9 +11,14 @@ import org.fox.ttrss.types.Feed;
 import org.fox.ttrss.types.FeedCategory;
 import org.fox.ttrss.types.FeedCategoryList;
 
+import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshAttacher.OnRefreshListener;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
@@ -41,7 +46,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
-public class FeedCategoriesFragment extends Fragment implements OnItemClickListener, OnSharedPreferenceChangeListener {
+public class FeedCategoriesFragment extends Fragment implements OnItemClickListener, OnSharedPreferenceChangeListener, OnRefreshListener {
 	private final String TAG = this.getClass().getSimpleName();
 	private SharedPreferences m_prefs;
 	private FeedCategoryListAdapter m_adapter;
@@ -123,11 +128,47 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 				}
 			}
 			return true;
-		case R.id.catchup_category:
+		case R.id.create_shortcut:
 			if (true) {
 				FeedCategory cat = getCategoryAtPosition(info.position);
 				if (cat != null) {
-					m_activity.catchupFeed(new Feed(cat.id, cat.title, true));
+					m_activity.createCategoryShortcut(cat);
+					//cf.setSelectedCategory(cat);
+				}
+			}
+			return true;
+		case R.id.catchup_category:
+			if (true) {
+				final FeedCategory cat = getCategoryAtPosition(info.position);
+				if (cat != null) {
+										
+					if (m_prefs.getBoolean("confirm_headlines_catchup", true)) {
+						AlertDialog.Builder builder = new AlertDialog.Builder(
+								m_activity)
+								.setMessage(getString(R.string.context_confirm_catchup, cat.title))
+								.setPositiveButton(R.string.catchup,
+										new Dialog.OnClickListener() {
+											public void onClick(DialogInterface dialog,
+													int which) {
+	
+												m_activity.catchupFeed(new Feed(cat.id, cat.title, true));											
+												
+											}
+										})
+								.setNegativeButton(R.string.dialog_cancel,
+										new Dialog.OnClickListener() {
+											public void onClick(DialogInterface dialog,
+													int which) {
+		
+											}
+										});
+		
+						AlertDialog dlg = builder.create();
+						dlg.show();						
+					} else {
+						m_activity.catchupFeed(new Feed(cat.id, cat.title, true));
+					}
+
 				}
 			}
 			return true;
@@ -177,6 +218,8 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 		list.setOnItemClickListener(this);
 		registerForContextMenu(list);
 		
+		m_activity.m_pullToRefreshAttacher.addRefreshableView(list, this);
+		
 		return view; 
 	}
 	
@@ -204,6 +247,7 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 	public void onSaveInstanceState (Bundle out) {
 		super.onSaveInstanceState(out);
 
+		out.setClassLoader(getClass().getClassLoader());
 		out.putParcelable("selectedCat", m_selectedCat);
 		out.putParcelable("cats", m_cats);
 	}
@@ -220,7 +264,6 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 		m_activity.setProgressBarIndeterminateVisibility(showProgress);
 	} */
 	
-	@SuppressWarnings("unchecked")
 	public void refresh(boolean background) {
 		CatsRequest req = new CatsRequest(getActivity().getApplicationContext());
 		
@@ -228,8 +271,8 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 		final boolean unreadOnly = m_activity.getUnreadOnly();
 		
 		if (sessionId != null) {
-			m_activity.setLoadingStatus(R.string.blank, true);
-			m_activity.setProgressBarVisibility(true);
+			//m_activity.setLoadingStatus(R.string.blank, true);
+			//m_activity.setProgressBarVisibility(true);
 			
 			@SuppressWarnings("serial")
 			HashMap<String,String> map = new HashMap<String,String>() {
@@ -263,6 +306,7 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 			if (isDetached()) return;
 			
 			m_activity.setProgressBarVisibility(false);
+			m_activity.m_pullToRefreshAttacher.setRefreshComplete();
 
 			if (getView() != null) {
 				ListView list = (ListView)getView().findViewById(R.id.feeds);
@@ -409,15 +453,12 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 			ImageView icon = (ImageView)v.findViewById(R.id.icon);
 			
 			if (icon != null) {
-				icon.setImageResource(cat.unread > 0 ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+				icon.setImageResource(cat.unread > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 			}
 
 			ImageButton ib = (ImageButton) v.findViewById(R.id.feed_menu_button);
 			
 			if (ib != null) {
-				if (m_activity.isDarkTheme())
-					ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
-				
 				ib.setOnClickListener(new OnClickListener() {					
 					@Override
 					public void onClick(View v) {
@@ -468,12 +509,20 @@ public class FeedCategoriesFragment extends Fragment implements OnItemClickListe
 		}
 	}
 
-	public void setSelectedCategory(FeedCategory cat) {
+	public void setSelectedCategory(FeedCategory cat) {	
 		m_selectedCat = cat;
-		m_adapter.notifyDataSetChanged();
+		
+		if (m_adapter != null) {
+			m_adapter.notifyDataSetChanged();
+		}
 	}
 	
 	public FeedCategory getSelectedCategory() {
 		return m_selectedCat;
+	}
+
+	@Override
+	public void onRefreshStarted(View view) {
+		refresh(false);
 	}	
 }

@@ -2,21 +2,19 @@ package org.fox.ttrss;
 
 import org.fox.ttrss.util.DatabaseHelper;
 
-import com.actionbarsherlock.app.SherlockFragmentActivity;
-
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Point;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.actionbarsherlock.app.SherlockFragmentActivity;
 
 public class CommonActivity extends SherlockFragmentActivity {
 	private final String TAG = this.getClass().getSimpleName();
@@ -173,6 +171,7 @@ public class CommonActivity extends SherlockFragmentActivity {
 		String defaultTheme = "THEME_DARK";
 		
 		return (m_prefs.getString("theme", defaultTheme).equals("THEME_DARK")) ||
+				m_prefs.getString("theme", defaultTheme).equals("THEME_SYSTEM") ||
 				m_prefs.getString("theme", defaultTheme).equals("THEME_DARK_GRAY");
 	}
 	
@@ -181,6 +180,8 @@ public class CommonActivity extends SherlockFragmentActivity {
 		
 		if (prefs.getString("theme", defaultTheme).equals("THEME_DARK")) {
 			setTheme(R.style.DarkTheme);
+		} else if (prefs.getString("theme", defaultTheme).equals("THEME_SYSTEM")) {
+			setTheme(R.style.SystemTheme);
 		} else if (prefs.getString("theme", defaultTheme).equals("THEME_SEPIA")) {
 			setTheme(R.style.SepiaTheme);
 		} else if (prefs.getString("theme", defaultTheme).equals("THEME_DARK_GRAY")) {

@@ -13,6 +13,8 @@ import org.fox.ttrss.types.Feed;
 import org.fox.ttrss.util.HeadlinesRequest;
 import org.jsoup.Jsoup;
 
+import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshAttacher.OnRefreshListener;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -34,11 +36,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.LayoutAnimationController;
-import android.view.animation.TranslateAnimation;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -46,14 +43,13 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.google.gson.JsonElement;
 
-public class HeadlinesFragment extends Fragment implements OnItemClickListener, OnScrollListener {
+public class HeadlinesFragment extends Fragment implements OnItemClickListener, OnScrollListener, OnRefreshListener {
 	public static enum ArticlesSelection { ALL, NONE, UNREAD };
 
 	public static final int HEADLINES_REQUEST_SIZE = 30;
@@ -65,6 +61,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	private Article m_activeArticle;
 	private String m_searchQuery = "";
 	private boolean m_refreshInProgress = false;
+	private boolean m_autoCatchupDisabled = false;
 	
 	private SharedPreferences m_prefs;
 	
@@ -212,12 +209,12 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 					ArticleList tmp = new ArticleList();
 					for (Article a : articles) {
 						if (a.unread) {
-							if (article.id == a.id)
-								break;
 
 							a.unread = false;
 							tmp.add(a);
 						}
+						if (article.id == a.id)
+							break;
 					}
 					if (tmp.size() > 0) {
 						m_activity.toggleArticlesUnread(tmp);
@@ -297,9 +294,11 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		list.setOnScrollListener(this);
 		//list.setEmptyView(view.findViewById(R.id.no_headlines));
 		registerForContextMenu(list);
+		
+		m_activity.m_pullToRefreshAttacher.addRefreshableView(list, this);
 
-		if (m_activity.isSmallScreen())
-			view.findViewById(R.id.headlines_fragment).setPadding(0, 0, 0, 0);
+		//if (m_activity.isSmallScreen())
+		//view.findViewById(R.id.headlines_fragment).setPadding(0, 0, 0, 0);
 
 		Log.d(TAG, "onCreateView, feed=" + m_feed);
 		
@@ -360,7 +359,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 		}
 	}
 
-	@SuppressWarnings({ "unchecked", "serial" })
+	@SuppressWarnings({ "serial" })
 	public void refresh(boolean append) {
 		if (m_activity != null && m_feed != null) {
 			m_refreshInProgress = true;
@@ -371,11 +370,25 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 				append = false;
 			}
 
+			// new stuff may appear on top, scroll back to show it
+			if (!append) {
+				if (getView() != null) {
+					Log.d(TAG, "scroll hack");
+					ListView list = (ListView)getView().findViewById(R.id.headlines);
+					m_autoCatchupDisabled = true;
+					list.setSelection(0);
+					m_autoCatchupDisabled = false;
+					list.setEmptyView(null);
+					m_adapter.clear();
+					m_adapter.notifyDataSetChanged();
+				}
+			}
+			
 			final boolean fappend = append;
 			final String sessionId = m_activity.getSessionId();
 			final boolean isCat = m_feed.is_cat;
 			
-			HeadlinesRequest req = new HeadlinesRequest(getActivity().getApplicationContext(), m_activity) {
+			HeadlinesRequest req = new HeadlinesRequest(getActivity().getApplicationContext(), m_activity, m_feed) {
 				@Override
 				protected void onProgressUpdate(Integer... progress) {
 					m_activity.setProgress(Math.round((((float)progress[0] / (float)progress[1]) * 10000)));
@@ -396,7 +409,11 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 					m_activity.setProgressBarVisibility(false);
 					
 					super.onPostExecute(result);	
-					
+
+					if (isAdded()) {
+						m_activity.m_pullToRefreshAttacher.setRefreshComplete();
+					}
+
 					if (result != null) {
 						m_refreshInProgress = false;
 						
@@ -405,6 +422,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 						
 						m_adapter.notifyDataSetChanged();
 						m_listener.onHeadlinesLoaded(fappend);
+						
 					} else {
 						if (m_lastError == ApiError.LOGIN_FAILED) {
 							m_activity.login();
@@ -418,11 +436,29 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 			int skip = 0;
 			
 			if (append) {
+				// adaptive, all_articles, marked, published, unread
+				String viewMode = m_activity.getViewMode();
+				int numUnread = 0;
+				int numAll = m_articles.size();
+				
 				for (Article a : m_articles) {
-					if (a.unread) ++skip;
+					if (a.unread) ++numUnread;
 				}
 				
-				if (skip == 0) skip = m_articles.size();
+				if ("marked".equals(viewMode)) {
+					skip = numAll;
+				} else if ("published".equals(viewMode)) {
+					skip = numAll;
+				} else if ("unread".equals(viewMode)) {
+					skip = numUnread;					
+				} else if (m_searchQuery != null && m_searchQuery.length() > 0) {
+					skip = numAll;
+				} else if ("adaptive".equals(viewMode)) {
+					skip = numUnread > 0 ? numUnread : numAll;
+				} else {
+					skip = numAll;
+				}
+				
 			} else {
 				m_activity.setLoadingStatus(R.string.blank, true);
 			}
@@ -463,6 +499,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 	public void onSaveInstanceState (Bundle out) {
 		super.onSaveInstanceState(out);
 		
+		out.setClassLoader(getClass().getClassLoader());
 		out.putParcelable("feed", m_feed);
 		//out.putParcelable("articles", m_articles);
 		out.putParcelable("activeArticle", m_activeArticle);
@@ -652,7 +689,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 			ImageView marked = (ImageView)v.findViewById(R.id.marked);
 			
 			if (marked != null) {
-				marked.setImageResource(article.marked ? android.R.drawable.star_on : android.R.drawable.star_off);
+				marked.setImageResource(article.marked ? R.drawable.ic_star_full : R.drawable.ic_star_empty);
 				
 				marked.setOnClickListener(new OnClickListener() {
 					
@@ -669,7 +706,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 			ImageView published = (ImageView)v.findViewById(R.id.published);
 			
 			if (published != null) {
-				published.setImageResource(article.published ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+				published.setImageResource(article.published ? R.drawable.ic_published : R.drawable.ic_unpublished);
 				
 				published.setOnClickListener(new OnClickListener() {
 					
@@ -765,13 +802,13 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 				});
 			}
 			
-			ImageButton ib = (ImageButton) v.findViewById(R.id.article_menu_button);
+			ImageView iv = (ImageView) v.findViewById(R.id.article_menu_button);
 			
-			if (ib != null) {
-				if (m_activity.isDarkTheme())
-					ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
+			if (iv != null) {
+				//if (m_activity.isDarkTheme())
+				//	ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
 				
-				ib.setOnClickListener(new OnClickListener() {					
+				iv.setOnClickListener(new OnClickListener() {					
 					@Override
 					public void onClick(View v) {
 						getActivity().openContextMenu(v);
@@ -869,7 +906,7 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 			refresh(true);
 		}
 
-		if (m_prefs.getBoolean("headlines_mark_read_scroll", false) && firstVisibleItem > 0) {
+		if (m_prefs.getBoolean("headlines_mark_read_scroll", false) && firstVisibleItem > 0 && !m_autoCatchupDisabled) {
 			Article a = m_articles.get(firstVisibleItem - 1);
 
 			if (a != null && a.unread) {
@@ -916,6 +953,11 @@ public class HeadlinesFragment extends Fragment implements OnItemClickListener, 
 
 	public Feed getFeed() {
 		return m_feed;
+	}
+
+	@Override
+	public void onRefreshStarted(View view) {
+		refresh(false);		
 	}
 
 	

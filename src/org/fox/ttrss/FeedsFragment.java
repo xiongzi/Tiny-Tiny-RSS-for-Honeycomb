@@ -17,9 +17,14 @@ import org.fox.ttrss.types.Feed;
 import org.fox.ttrss.types.FeedCategory;
 import org.fox.ttrss.types.FeedList;
 
+import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshAttacher.OnRefreshListener;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.graphics.Bitmap;
@@ -54,7 +59,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
-public class FeedsFragment extends Fragment implements OnItemClickListener, OnSharedPreferenceChangeListener {
+public class FeedsFragment extends Fragment implements OnItemClickListener, OnSharedPreferenceChangeListener, OnRefreshListener {
 	private final String TAG = this.getClass().getSimpleName();
 	private SharedPreferences m_prefs;
 	private FeedListAdapter m_adapter;
@@ -154,11 +159,45 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 				}
 			}
 			return true;
-		case R.id.catchup_feed:
+		case R.id.create_shortcut:
 			if (true) {
 				Feed feed = getFeedAtPosition(info.position);
 				if (feed != null) {
-					m_activity.catchupFeed(feed);
+					m_activity.createFeedShortcut(feed);
+				}
+			}
+			return true;
+		case R.id.catchup_feed:
+			if (true) {
+				final Feed feed = getFeedAtPosition(info.position);
+				
+				if (feed != null) {
+					if (m_prefs.getBoolean("confirm_headlines_catchup", true)) {
+						AlertDialog.Builder builder = new AlertDialog.Builder(
+								m_activity)
+								.setMessage(getString(R.string.context_confirm_catchup, feed.title))
+								.setPositiveButton(R.string.catchup,
+										new Dialog.OnClickListener() {
+											public void onClick(DialogInterface dialog,
+													int which) {
+	
+												m_activity.catchupFeed(feed);											
+												
+											}
+										})
+								.setNegativeButton(R.string.dialog_cancel,
+										new Dialog.OnClickListener() {
+											public void onClick(DialogInterface dialog,
+													int which) {
+		
+											}
+										});
+		
+						AlertDialog dlg = builder.create();
+						dlg.show();						
+					} else {
+						m_activity.catchupFeed(feed);
+					}
 				}
 			}
 			return true;
@@ -215,6 +254,10 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		
 		m_enableFeedIcons = m_prefs.getBoolean("download_feed_icons", false);
 		
+		Log.d(TAG, "mpTRA=" + m_activity.m_pullToRefreshAttacher);
+		
+		m_activity.m_pullToRefreshAttacher.addRefreshableView(list, this);
+		
 		return view;    	
 	}
 
@@ -231,6 +274,7 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		m_prefs.registerOnSharedPreferenceChangeListener(this);
 		
 		m_activity = (FeedsActivity)activity;
+				
 	}
 
 	@Override
@@ -246,6 +290,7 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 	public void onSaveInstanceState (Bundle out) {
 		super.onSaveInstanceState(out);
 
+		out.setClassLoader(getClass().getClassLoader());
 		out.putParcelable("selectedFeed", m_selectedFeed);
 		out.putParcelable("feeds", m_feeds);
 		out.putBoolean("feedIconsChecked", m_feedIconsChecked);
@@ -283,10 +328,9 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		}
 	}
 
-	@SuppressWarnings({ "unchecked", "serial" })
+	@SuppressWarnings({ "serial" })
 	public void refresh(boolean background) {
 		//FeedCategory cat = m_onlineServices.getActiveCategory();
-		m_activity.setProgressBarVisibility(true);
 		
 		final int catId = (m_activeCategory != null) ? m_activeCategory.id : -4;
 		
@@ -296,7 +340,8 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		FeedsRequest req = new FeedsRequest(getActivity().getApplicationContext(), catId);
 		
 		if (sessionId != null) {
-			m_activity.setLoadingStatus(R.string.blank, true);
+			//m_activity.setLoadingStatus(R.string.blank, true);
+			//m_activity.setProgressBarVisibility(true);
 			
 			HashMap<String,String> map = new HashMap<String,String>() {
 				{
@@ -328,7 +373,7 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 			getActivity().setProgressBarIndeterminateVisibility(showProgress);
 	} */
 	
-	@SuppressWarnings({ "unchecked", "serial" })
+	@SuppressWarnings({ "serial" })
 	public void getFeedIcons() {
 		
 		ApiRequest req = new ApiRequest(getActivity().getApplicationContext()) {
@@ -345,7 +390,7 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 							String baseUrl = "";
 							
 							if (!iconsStr.contains("://")) {
-								baseUrl = m_prefs.getString("ttrss_url", "") + "/" + iconsStr;									
+								baseUrl = m_prefs.getString("ttrss_url", "").trim() + "/" + iconsStr;									
 							} else {
 								baseUrl = iconsStr;
 							}
@@ -406,6 +451,7 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 			}
 			
 			m_activity.setProgressBarVisibility(false);
+			m_activity.m_pullToRefreshAttacher.setRefreshComplete();
 
 			if (result != null) {
 				try {			
@@ -430,10 +476,9 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 						m_activity.setLoadingStatus(R.string.blank, false);
 						//m_adapter.notifyDataSetChanged(); (done by sortFeeds)
 						
-						if (m_enableFeedIcons && !m_feedIconsChecked && 
-								Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) 
+						if (m_enableFeedIcons && !m_feedIconsChecked &&	Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) 
 							getFeedIcons();
-
+						
 						return;
 					}
 							
@@ -517,20 +562,24 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 				
 				if (m_enableFeedIcons) {
 					
-					File storage = m_activity.getExternalCacheDir();
-					
-					File iconFile = new  File(storage.getAbsolutePath() + ICON_PATH + feed.id + ".ico");
-					if (iconFile.exists()) {
-						Bitmap bmpOrig = BitmapFactory.decodeFile(iconFile.getAbsolutePath());		
-						if (bmpOrig != null) {
-							icon.setImageBitmap(bmpOrig);
+					try {
+						File storage = m_activity.getExternalCacheDir();
+						
+						File iconFile = new  File(storage.getAbsolutePath() + ICON_PATH + feed.id + ".ico");
+						if (iconFile.exists()) {
+							Bitmap bmpOrig = BitmapFactory.decodeFile(iconFile.getAbsolutePath());		
+							if (bmpOrig != null) {
+								icon.setImageBitmap(bmpOrig);
+							}
+						} else {
+							icon.setImageResource(feed.unread > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 						}
-					} else {
-						icon.setImageResource(feed.unread > 0 ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+					} catch (NullPointerException e) {
+						icon.setImageResource(feed.unread > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 					}
 					
 				} else {
-					icon.setImageResource(feed.unread > 0 ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+					icon.setImageResource(feed.unread > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 				}
 				
 			}
@@ -538,9 +587,6 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 			ImageButton ib = (ImageButton) v.findViewById(R.id.feed_menu_button);
 			
 			if (ib != null) {
-				if (m_activity.isDarkTheme())
-					ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
-				
 				ib.setOnClickListener(new OnClickListener() {					
 					@Override
 					public void onClick(View v) {
@@ -585,19 +631,23 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 		private String m_baseUrl;
 		
 		public GetIconsTask(String baseUrl) {
-			m_baseUrl = baseUrl;
+			m_baseUrl = baseUrl.trim();
 		}
 
 		@Override
 		protected Integer doInBackground(FeedList... params) {
 
+			FeedList localList = new FeedList();			
+			
 			try {
+				localList.addAll(params[0]);
+
 				File storage = m_activity.getExternalCacheDir();
 				final File iconPath = new File(storage.getAbsolutePath() + ICON_PATH);
 				if (!iconPath.exists()) iconPath.mkdirs();
 			
 				if (iconPath.exists()) {
-					for (Feed feed : params[0])	 {
+					for (Feed feed : localList)	 {
 						if (feed.id > 0 && feed.has_icon && !feed.is_cat) {
 							File outputFile = new File(iconPath.getAbsolutePath() + "/" + feed.id + ".ico");
 							String fetchUrl = m_baseUrl + "/" + feed.id + ".ico";
@@ -627,6 +677,11 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 			try {
 				URL url = new URL(fetchUrl);
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+				
+				conn.setConnectTimeout(1000);
+				conn.setReadTimeout(5000);
+				
+				Log.d(TAG, "[downloadFile] " + url);
 
 				String httpLogin = m_prefs.getString("http_login", "");
 				String httpPassword = m_prefs.getString("http_password", "");
@@ -688,7 +743,15 @@ public class FeedsFragment extends Fragment implements OnItemClickListener, OnSh
 	
 	public void setSelectedFeed(Feed feed) {
 		m_selectedFeed = feed;
-		m_adapter.notifyDataSetChanged();
+		
+		if (m_adapter != null) {
+			m_adapter.notifyDataSetChanged();
+		}
+	}
+
+	@Override
+	public void onRefreshStarted(View view) {
+		refresh(false);
 	}
 
 }

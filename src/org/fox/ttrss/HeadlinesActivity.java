@@ -47,7 +47,26 @@ public class HeadlinesActivity extends OnlineActivity implements HeadlinesEventL
 			Intent i = getIntent();
 			
 			if (i.getExtras() != null) {
-				final Feed feed = i.getParcelableExtra("feed");
+				boolean shortcutMode = i.getBooleanExtra("shortcut_mode", false);
+				
+				Log.d(TAG, "is_shortcut_mode: " + shortcutMode);
+				
+				Feed tmpFeed;
+				
+				if (shortcutMode) {
+					int feedId = i.getIntExtra("feed_id", 0);
+					boolean isCat = i.getBooleanExtra("feed_is_cat", false);
+					String feedTitle = i.getStringExtra("feed_title");
+					
+					tmpFeed = new Feed(feedId, feedTitle, isCat);
+					
+					GlobalState.getInstance().m_loadedArticles.clear();					
+				} else {
+					tmpFeed = i.getParcelableExtra("feed");
+				}
+				
+				final Feed feed = tmpFeed;
+				
 				final Article article = i.getParcelableExtra("article");
 				final String searchQuery = i.getStringExtra("searchQuery");
 				
@@ -150,7 +169,7 @@ public class HeadlinesActivity extends OnlineActivity implements HeadlinesEventL
 			
 			if (af != null) {
 				if (af.getSelectedArticle() != null && af.getSelectedArticle().attachments != null && af.getSelectedArticle().attachments.size() > 0) {
-					if (!isCompatMode()) {
+					if (!isCompatMode() && (isSmallScreen() || !isPortrait())) {
 						m_menu.findItem(R.id.toggle_attachments).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
 					}
 					m_menu.findItem(R.id.toggle_attachments).setVisible(true);
@@ -231,7 +250,7 @@ public class HeadlinesActivity extends OnlineActivity implements HeadlinesEventL
 
 				ft.replace(R.id.article_fragment, new LoadingFragment(), null);
 				
-				ft.commit();
+				ft.commitAllowingStateLoss();
 				
 				final Article fArticle = article;
 				final Feed fFeed = hf.getFeed();
@@ -246,7 +265,7 @@ public class HeadlinesActivity extends OnlineActivity implements HeadlinesEventL
 						af.initialize(fArticle, fFeed);
 
 						ft.replace(R.id.article_fragment, af, FRAG_ARTICLE);
-						ft.commit();
+						ft.commitAllowingStateLoss();
 					}
 				}, 10);				
 			}

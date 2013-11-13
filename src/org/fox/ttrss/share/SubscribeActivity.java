@@ -8,10 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.fox.ttrss.ApiRequest;
-import org.fox.ttrss.ApiRequest.ApiError;
+import org.fox.ttrss.R;
 import org.fox.ttrss.types.FeedCategory;
 import org.fox.ttrss.types.FeedCategoryList;
-import org.fox.ttrss.R;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -224,8 +223,7 @@ public class SubscribeActivity extends CommonShareActivity {
 						final List<FeedCategory> cats = new Gson().fromJson(content, listType);
 						
 						m_cats.clear();
-						m_cats.add(new FeedCategory(0, "Uncategorized", 0));
-						
+												
 						for (FeedCategory c : cats) {
 							if (c.id > 0)
 								m_cats.add(c);							
@@ -233,8 +231,10 @@ public class SubscribeActivity extends CommonShareActivity {
 						
 						sortCats();
 						
-						m_adapter.notifyDataSetChanged();
+						m_cats.add(0, new FeedCategory(0, "Uncategorized", 0));
 						
+						m_adapter.notifyDataSetChanged();
+												
 						toast(R.string.category_list_updated);
 					}
 				}

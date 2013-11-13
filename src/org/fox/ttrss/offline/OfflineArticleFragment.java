@@ -1,12 +1,12 @@
 package org.fox.ttrss.offline;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.fox.ttrss.CommonActivity;
 import org.fox.ttrss.R;
 import org.fox.ttrss.util.ImageCacheService;
 import org.jsoup.Jsoup;
@@ -19,6 +19,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -38,8 +39,8 @@ import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebSettings.LayoutAlgorithm;
-import android.webkit.WebView.HitTestResult;
 import android.webkit.WebView;
+import android.webkit.WebView.HitTestResult;
 import android.widget.TextView;
 
 public class OfflineArticleFragment extends Fragment implements GestureDetector.OnDoubleTapListener {
@@ -122,7 +123,9 @@ public class OfflineArticleFragment extends Fragment implements GestureDetector.
 			m_articleId = savedInstanceState.getInt("articleId");
 		}
 		
-		View view = inflater.inflate(R.layout.article_fragment, container, false);
+		boolean useTitleWebView = m_prefs.getBoolean("article_compat_view", false);
+		
+		View view = inflater.inflate(useTitleWebView ? R.layout.article_fragment_compat : R.layout.article_fragment, container, false);
 
 		m_cursor = m_activity.getReadableDb().query("articles LEFT JOIN feeds ON (feed_id = feeds."+BaseColumns._ID+")", 
 				new String[] { "articles.*", "feeds.title AS feed_title" }, "articles." + BaseColumns._ID + "=?", 
@@ -133,6 +136,8 @@ public class OfflineArticleFragment extends Fragment implements GestureDetector.
 		if (m_cursor.isFirst()) {
 			
 			TextView title = (TextView)view.findViewById(R.id.title);
+
+			final String link = m_cursor.getString(m_cursor.getColumnIndex("link"));
 			
 			if (title != null) {
 				
@@ -142,8 +147,6 @@ public class OfflineArticleFragment extends Fragment implements GestureDetector.
 					titleStr = m_cursor.getString(m_cursor.getColumnIndex("title")).substring(0, 200) + "...";
 				else
 					titleStr = m_cursor.getString(m_cursor.getColumnIndex("title"));
-				
-				final String link = m_cursor.getString(m_cursor.getColumnIndex("link"));
 				
 				title.setText(titleStr);
 				//title.setPaintFlags(title.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
@@ -211,18 +214,28 @@ public class OfflineArticleFragment extends Fragment implements GestureDetector.
 			    getActivity().getTheme().resolveAttribute(R.attr.linkColor, tv, true);
 			    
 			    // prevent flicker in ics
-			    if (android.os.Build.VERSION.SDK_INT >= 11) {
-			    	web.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+			    if (!m_prefs.getBoolean("webview_hardware_accel", true) || useTitleWebView) {
+			    	if (android.os.Build.VERSION.SDK_INT >= 11) {
+			    		web.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+			    	}
 			    }
+			    
+			    String theme = m_prefs.getString("theme", "THEME_DARK");
 
-				if (m_prefs.getString("theme", "THEME_DARK").equals("THEME_DARK")) {
+				if ("THEME_DARK".equals(theme) || "THEME_SYSTEM".equals(theme)) {
 					cssOverride = "body { background : transparent; color : #e0e0e0}";
-				} else if (m_prefs.getString("theme", "THEME_DARK").equals("THEME_DARK_GRAY")) {
+				} else if ("THEME_DARK_GRAY".equals(theme)) {
 					cssOverride = "body { background : transparent; color : #e0e0e0}";
 				} else {
 					cssOverride = "body { background : transparent; }";
 				}
-				web.setBackgroundColor(getResources().getColor(android.R.color.transparent));
+
+				if (useTitleWebView || android.os.Build.VERSION.SDK_INT < 11) {
+					web.setBackgroundColor(Color.TRANSPARENT);
+				} else {
+					// seriously?
+					web.setBackgroundColor(Color.argb(1, 0, 0, 0));
+				}
 				
 				String hexColor = String.format("#%06X", (0xFFFFFF & tv.data));
 			    cssOverride += " a:link {color: "+hexColor+";} a:visited { color: "+hexColor+";}";
@@ -278,10 +291,25 @@ public class OfflineArticleFragment extends Fragment implements GestureDetector.
 					cssOverride +
 					"</style>" +
 					"</head>" +
-					"<body>" + articleContent + "<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p></body></html>";
-					
+					"<body>" + articleContent;
+				
+				if (useTitleWebView) {
+					content += "<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>";
+				}
+				
+				content += "</body></html>";
+				
 				try {
-					web.loadDataWithBaseURL(null, content, "text/html", "utf-8", null);
+					String baseUrl = null;
+					
+					try {
+						URL url = new URL(link);
+						baseUrl = url.getProtocol() + "://" + url.getHost();
+					} catch (MalformedURLException e) {
+						//
+					}
+					
+					web.loadDataWithBaseURL(baseUrl, content, "text/html", "utf-8", null);
 				} catch (RuntimeException e) {					
 					e.printStackTrace();
 				}

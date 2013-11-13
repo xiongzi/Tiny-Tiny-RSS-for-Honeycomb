@@ -1,4 +1,4 @@
-package org.fox.ttrss;
+package org.fox.ttrss.util;
 
 // http://www.techques.com/question/1-9718245/Webview-in-Scrollview
 

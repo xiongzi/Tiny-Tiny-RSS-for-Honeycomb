@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.os.BadParcelableException;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ClassloaderWorkaroundFragmentStatePagerAdapter;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -24,7 +25,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 
 import com.google.gson.JsonElement;
-import com.viewpagerindicator.TitlePageIndicator;
 import com.viewpagerindicator.UnderlinePageIndicator;
 
 public class ArticlePager extends Fragment {
@@ -39,7 +39,7 @@ public class ArticlePager extends Fragment {
 	private Feed m_feed;
 	private SharedPreferences m_prefs;
 	
-	private class PagerAdapter extends FragmentStatePagerAdapter {
+	private class PagerAdapter extends ClassloaderWorkaroundFragmentStatePagerAdapter {
 		
 		public PagerAdapter(FragmentManager fm) {
 			super(fm);
@@ -130,7 +130,7 @@ public class ArticlePager extends Fragment {
 					
 					//Log.d(TAG, "Page #" + position + "/" + m_adapter.getCount());
 					
-					if ((m_activity.isSmallScreen() || m_activity.isPortrait()) && position == m_adapter.getCount() - 5) {
+					if ((m_activity.isSmallScreen() || m_activity.isPortrait()) && position == m_adapter.getCount() - 15) {
 						Log.d(TAG, "loading more articles...");
 						refresh(true);
 					}
@@ -141,17 +141,18 @@ public class ArticlePager extends Fragment {
 		return view;
 	}
 	
-	@SuppressWarnings({ "unchecked", "serial" }) 
+	@SuppressWarnings({ "serial" }) 
 	protected void refresh(boolean append) {
 		m_activity.setLoadingStatus(R.string.blank, true);
 
 		m_activity.setProgressBarVisibility(true);
+		m_activity.m_pullToRefreshAttacher.setRefreshing(true);
 		
 		if (!m_feed.equals(GlobalState.getInstance().m_activeFeed)) {
 			append = false;
 		}
 		
-		HeadlinesRequest req = new HeadlinesRequest(getActivity().getApplicationContext(), m_activity) {
+		HeadlinesRequest req = new HeadlinesRequest(getActivity().getApplicationContext(), m_activity, m_feed) {
 			@Override
 			protected void onProgressUpdate(Integer... progress) {
 				m_activity.setProgress(progress[0] / progress[1] * 10000);
@@ -162,6 +163,7 @@ public class ArticlePager extends Fragment {
 				if (isDetached()) return;
 				
 				m_activity.setProgressBarVisibility(false);
+				m_activity.m_pullToRefreshAttacher.setRefreshComplete();
 
 				super.onPostExecute(result);
 				
@@ -175,10 +177,12 @@ public class ArticlePager extends Fragment {
 						}
 					}
 					
-					if (m_article.id == 0 || m_articles.indexOf(m_article) == -1) {
-						if (m_articles.size() > 0) {
-							m_article = m_articles.get(0);
-							m_listener.onArticleSelected(m_article, false);
+					if (m_article != null) {
+						if (m_article.id == 0 || m_articles.indexOf(m_article) == -1) {
+							if (m_articles.size() > 0) {
+								m_article = m_articles.get(0);
+								m_listener.onArticleSelected(m_article, false);
+							}
 						}
 					}
 					
@@ -199,11 +203,28 @@ public class ArticlePager extends Fragment {
 		int skip = 0;
 		
 		if (append) {
+			// adaptive, all_articles, marked, published, unread
+			String viewMode = m_activity.getViewMode();
+			int numUnread = 0;
+			int numAll = m_articles.size();
+			
 			for (Article a : m_articles) {
-				if (a.unread) ++skip;
+				if (a.unread) ++numUnread;
 			}
 			
-			if (skip == 0) skip = m_articles.size();
+			if ("marked".equals(viewMode)) {
+				skip = numAll;
+			} else if ("published".equals(viewMode)) {
+				skip = numAll;
+			} else if ("unread".equals(viewMode)) {
+				skip = numUnread;					
+			} else if (m_searchQuery != null && m_searchQuery.length() > 0) {
+				skip = numAll;
+			} else if ("adaptive".equals(viewMode)) {
+				skip = numUnread > 0 ? numUnread : numAll;
+			} else {
+				skip = numAll;
+			}
 		}
 		
 		final int fskip = skip;
@@ -241,6 +262,7 @@ public class ArticlePager extends Fragment {
 	public void onSaveInstanceState(Bundle out) {
 		super.onSaveInstanceState(out);
 		
+		out.setClassLoader(getClass().getClassLoader());
 		out.putParcelable("article", m_article);
 		out.putParcelable("feed", m_feed);
 	}

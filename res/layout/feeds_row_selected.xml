@@ -18,7 +18,7 @@
         android:layout_height="20dp"
         android:layout_weight="0"
         android:scaleType="fitXY"
-        android:src="@drawable/ic_rss_bw" />
+        android:src="@drawable/ic_unpublished" />
 
     <TextView
         android:id="@+id/title"
@@ -26,9 +26,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:layout_weight="1"
-        android:paddingLeft="6dip"
+        android:ellipsize="end"
+        android:paddingLeft="8dip"
         android:singleLine="true"
-        android:ellipsize="end"        
         android:text="{FEED}"
         android:textColor="?feedlistSelectedTextColor"
         android:textSize="18dip" />
@@ -58,9 +58,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="0"
         android:background="@null"
-        android:paddingLeft="6dp"
-        android:paddingTop="6dp"
-        android:visibility="gone"
-        android:src="@drawable/ic_mailbox_collapsed_holo_light" />
+        android:paddingLeft="8dp"
+        android:paddingRight="4dp"
+        android:src="@drawable/ic_action_overflow" />
 
 </LinearLayout>

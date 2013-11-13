@@ -34,17 +34,11 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.LayoutAnimationController;
-import android.view.animation.TranslateAnimation;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckBox;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -317,8 +311,8 @@ public class OfflineHeadlinesFragment extends Fragment implements OnItemClickLis
 		list.setEmptyView(view.findViewById(R.id.no_headlines));
 		registerForContextMenu(list);
 
-		if (m_activity.isSmallScreen())
-			view.findViewById(R.id.headlines_fragment).setPadding(0, 0, 0, 0);
+		//if (m_activity.isSmallScreen())
+		//	view.findViewById(R.id.headlines_fragment).setPadding(0, 0, 0, 0);
 		
 		getActivity().setProgressBarIndeterminateVisibility(false);
 
@@ -525,7 +519,7 @@ public class OfflineHeadlinesFragment extends Fragment implements OnItemClickLis
 			ImageView marked = (ImageView)v.findViewById(R.id.marked);
 			
 			if (marked != null) {
-				marked.setImageResource(article.getInt(article.getColumnIndex("marked")) == 1 ? android.R.drawable.star_on : android.R.drawable.star_off);
+				marked.setImageResource(article.getInt(article.getColumnIndex("marked")) == 1 ? R.drawable.ic_star_full : R.drawable.ic_star_empty);
 				
 				marked.setOnClickListener(new OnClickListener() {
 					
@@ -546,7 +540,7 @@ public class OfflineHeadlinesFragment extends Fragment implements OnItemClickLis
 			ImageView published = (ImageView)v.findViewById(R.id.published);
 			
 			if (published != null) {
-				published.setImageResource(article.getInt(article.getColumnIndex("published")) == 1 ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+				published.setImageResource(article.getInt(article.getColumnIndex("published")) == 1 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 				
 				published.setOnClickListener(new OnClickListener() {
 					
@@ -645,11 +639,11 @@ public class OfflineHeadlinesFragment extends Fragment implements OnItemClickLis
 				});
 			}
 			
-			ImageButton ib = (ImageButton) v.findViewById(R.id.article_menu_button);
+			ImageView ib = (ImageView) v.findViewById(R.id.article_menu_button);
 			
 			if (ib != null) {
-				if (m_activity.isDarkTheme())
-					ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
+				//if (m_activity.isDarkTheme())
+				//	ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
 				
 				ib.setOnClickListener(new OnClickListener() {					
 					@Override

@@ -297,20 +297,24 @@ public class OfflineFeedsFragment extends Fragment implements OnItemClickListene
 				
 				if (m_enableFeedIcons) {
 					
-					File storage = Environment.getExternalStorageDirectory();
-					
-					File iconFile = new File(storage.getAbsolutePath() + ICON_PATH + cursor.getInt(cursor.getColumnIndex(BaseColumns._ID)) + ".ico");
-					if (iconFile.exists()) {
-						Bitmap bmpOrig = BitmapFactory.decodeFile(iconFile.getAbsolutePath());		
-						if (bmpOrig != null) {
-							icon.setImageBitmap(bmpOrig);
+					try {
+						File storage = Environment.getExternalStorageDirectory();
+						
+						File iconFile = new File(storage.getAbsolutePath() + ICON_PATH + cursor.getInt(cursor.getColumnIndex(BaseColumns._ID)) + ".ico");
+						if (iconFile.exists()) {
+							Bitmap bmpOrig = BitmapFactory.decodeFile(iconFile.getAbsolutePath());		
+							if (bmpOrig != null) {
+								icon.setImageBitmap(bmpOrig);
+							}
+						} else {
+							icon.setImageResource(cursor.getInt(cursor.getColumnIndex("unread")) > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 						}
-					} else {
-						icon.setImageResource(cursor.getInt(cursor.getColumnIndex("unread")) > 0 ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+					} catch (NullPointerException e) {
+						icon.setImageResource(cursor.getInt(cursor.getColumnIndex("unread")) > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 					}
 					
 				} else {
-					icon.setImageResource(cursor.getInt(cursor.getColumnIndex("unread")) > 0 ? R.drawable.ic_rss : R.drawable.ic_rss_bw);
+					icon.setImageResource(cursor.getInt(cursor.getColumnIndex("unread")) > 0 ? R.drawable.ic_published : R.drawable.ic_unpublished);
 				}
 				
 			}
@@ -318,9 +322,6 @@ public class OfflineFeedsFragment extends Fragment implements OnItemClickListene
 			ImageButton ib = (ImageButton) v.findViewById(R.id.feed_menu_button);
 			
 			if (ib != null) {
-				if (m_activity.isDarkTheme())
-					ib.setImageResource(R.drawable.ic_mailbox_collapsed_holo_dark);
-				
 				ib.setOnClickListener(new OnClickListener() {					
 					@Override
 					public void onClick(View v) {
